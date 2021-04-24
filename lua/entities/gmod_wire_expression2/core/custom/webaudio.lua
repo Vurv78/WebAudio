@@ -62,7 +62,7 @@ e2function webaudio createWebAudio(string url)
 
     local count = stream_count[owner] or 0
     if count+1 > MaxStreams:GetInt() then
-        error("Reached maximum amount of WebAudio streams!", 2)
+        error("Reached maximum amount of WebAudio streams!")
     end
     stream_count[owner] = count + 1
     return registerStream(self, WebAudio(url, owner), owner)
@@ -82,7 +82,7 @@ end
 --- Expects a WebAudio object to not be destroyed, else throws an error.
 local function expect_audio(this)
     if this:IsDestroyed() then
-        error("Invalid WebAudio stream!", 2)
+        error("Invalid WebAudio stream!")
     end
     return this
 end
@@ -108,7 +108,9 @@ end
 __e2setcost(5)
 e2function void webaudio:setVolume(number vol)
     local this = expect_audio(this)
-    this:SetVolume(vol)
+    local max = Common.WAMaxVolume:GetInt()
+    if vol > max then error("Volume is too high, must be [0-" .. max .. "%] !") end
+    this:SetVolume(vol/100)
 end
 
 e2function void webaudio:setTime(number time)
