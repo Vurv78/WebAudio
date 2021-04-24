@@ -1,4 +1,4 @@
-name: Glua Linter
+name: Linter
 
 # Just runs GluaFixer https://github.com/FPtje/GLuaFixer on the repo.
 # Derived from ACF-3's workflow
