@@ -5,7 +5,7 @@
     "lint_deprecated":                  true,
     "lint_trailingWhitespace":          true,
     "lint_whitespaceStyle":             true,
-    "lint_beginnerMistakes":            true,
+    "lint_beginnerMistakes":            false,
     "lint_emptyBlocks":                 true,
     "lint_shadowing":                   true,
     "lint_gotos":                       true,

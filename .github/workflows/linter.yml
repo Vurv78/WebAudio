@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    
+
     - name: Download GluaFixer 1.17.3
       run: |
         curl -o glualint.zip -L https://github.com/FPtje/GLuaFixer/releases/latest/download/glualint-1.17.3-linux.zip

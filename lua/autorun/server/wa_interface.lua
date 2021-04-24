@@ -7,7 +7,6 @@ util.AddNetworkString("wa_create")
 util.AddNetworkString("wa_change")
 
 local Interfaces = {}
-local PlayerLookup = {}
 
 _G.WebAudio = {} -- Interface to clientside Bass objects.
 WebAudio.__index = WebAudio
@@ -16,8 +15,11 @@ local WebAudio = WebAudio
 
 debug.getregistry()["WebAudio"] = WebAudio
 
+-- For now just increment ids, I think it'll be fine this way.
+local current_id = 1
 local function getID()
-    return #Interfaces + 1
+    current_id = current_id + 1
+    return current_id
 end
 
 function WebAudio:SetModify(n)
@@ -114,7 +116,7 @@ local function createInterface(_, url, owner)
     --assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." ) -- For now each interface needs an owner.
 
     local self = setmetatable({}, WebAudio)
-    
+
     -- Mutable
     self.volume = 1
     self.time = 0
