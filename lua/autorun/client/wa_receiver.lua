@@ -6,7 +6,7 @@ local AwaitingChanges = {}
 local WAudio = {}
 WAudio.__index = WAudio
 
-local storeChanges, handleChanges
+local updateObject
 
 local function createObject(_, id, url, owner, bass)
     local self = setmetatable({}, WAudio)
@@ -43,7 +43,7 @@ net.Receive("wa_create", function(len)
 
                 local changes_awaiting = AwaitingChanges[id]
                 if changes_awaiting then
-                    handleChanges(id, changes_awaiting)
+                    updateObject(id, changes_awaiting, true, false)
                     AwaitingChanges[id] = nil
                 end
             end
@@ -56,7 +56,13 @@ end)
 
 local Modify = Common.Modify
 local hasModifyFlag = Common.hasModifyFlag
-function storeChanges(id, modify_enum, handle_bass)
+
+--- Stores changes on the Receiver object
+-- @param number id ID of the Receiver Object, to be used to search the table of 'Audios'
+-- @param number modify_enum Mixed bitwise enum that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
+-- @param boolean handle_bass Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
+-- @param boolean inside_net Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
+function updateObject(id, modify_enum, handle_bass, inside_net)
     -- Object destroyed
     local self = Audios[id]
     local bass = self.bass
@@ -67,22 +73,19 @@ function storeChanges(id, modify_enum, handle_bass)
             bass:Stop()
             Audios[ self.id ] = nil
             self = nil
-
         end
         return
     end
 
     -- Volume changed
     if hasModifyFlag(modify_enum, Modify.volume) then
-        self.volume = net.ReadFloat()
-        if handle_bass then
-            bass:SetVolume(self.volume)
-        end
+        if inside_net then self.volume = net.ReadFloat() end
+        if handle_bass then bass:SetVolume(self.volume) end
     end
 
     -- Time changed
     if hasModifyFlag(modify_enum, Modify.time) then
-        self.time = net.ReadUInt(16)
+        if inside_net then self.time = net.ReadUInt(16) end
         if handle_bass then
             bass:SetTime(self.time) -- 18 hours max, if you need more, wtf..
         end
@@ -90,7 +93,7 @@ function storeChanges(id, modify_enum, handle_bass)
 
     -- 3D Position changed
     if hasModifyFlag(modify_enum, Modify.pos) then
-        self.pos = net.ReadVector()
+        if inside_net then self.pos = net.ReadVector() end
         if handle_bass then
             bass:SetPos(self.pos)
         end
@@ -98,7 +101,7 @@ function storeChanges(id, modify_enum, handle_bass)
 
     -- Playback rate changed
     if hasModifyFlag(modify_enum, Modify.playback_rate) then
-        self.playback_rate = net.ReadFloat()
+        if inside_net then self.playback_rate = net.ReadFloat() end
         if handle_bass then
             bass:SetPlaybackRate(self.playback_rate)
         end
@@ -106,7 +109,7 @@ function storeChanges(id, modify_enum, handle_bass)
 
     -- Playing / Paused state changed
     if hasModifyFlag(modify_enum, Modify.playing) then
-        self.playing = net.ReadBool()
+        if inside_net then self.playing = net.ReadBool() end
         -- Should always be true so..
         if handle_bass then
             if self.playing then
@@ -115,50 +118,6 @@ function storeChanges(id, modify_enum, handle_bass)
             else
                 bass:Stop()
             end
-        end
-    end
-end
-
-function handleChanges(id, modify_enum)
-    -- Object destroyed
-    local self = Audios[id]
-    local bass = self.bass
-
-    if hasModifyFlag(modify_enum, Modify.destroyed) then
-        bass:Stop()
-
-        Audios[ self.id ] = nil
-        self = nil
-        return
-    end
-
-    -- Volume changed
-    if hasModifyFlag(modify_enum, Modify.volume) then
-        bass:SetVolume(self.volume)
-    end
-
-    -- Time changed
-    if hasModifyFlag(modify_enum, Modify.time) then
-        bass:SetTime(self.time) -- 18 hours max, if you need more, wtf..
-    end
-
-    -- 3D Position changed
-    if hasModifyFlag(modify_enum, Modify.pos) then
-        bass:SetPos(self.pos)
-    end
-
-    -- Playback rate changed
-    if hasModifyFlag(modify_enum, Modify.playback_rate) then
-        bass:SetPlaybackRate(self.playback_rate)
-    end
-
-    -- Playing / Paused state changed
-    if hasModifyFlag(modify_enum, Modify.playing) then
-        if self.playing then
-            -- If changed to be playing, play. Else stop
-            bass:Play()
-        else
-            bass:Stop()
         end
     end
 end
@@ -172,10 +131,10 @@ net.Receive("wa_change", function(len)
 
     if obj.bass then
         -- Store and handle changes
-        storeChanges(id, modify_enum, true)
+        updateObject(id, modify_enum, true, true)
     else
         -- We don't have the bass object yet. Store the changes to update the object with later.
         AwaitingChanges[id] = modify_enum
-        storeChanges(id, modify_enum)
+        updateObject(id, modify_enum, false, true)
     end
 end)
