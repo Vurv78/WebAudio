@@ -25,7 +25,7 @@ local Whitelist = {
     simple [[translate.google.com]],
 
     -- Discord
-    pattern [[cdn[%w-_]*.discordapp%.com]],
+    pattern [[cdn[%w-_]*%.discordapp%.com/.+]],
 
     -- Reddit
     simple [[i.redditmedia.com]],

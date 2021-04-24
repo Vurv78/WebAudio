@@ -1,0 +1,18 @@
+{
+    "title"		:	"WebAudio",
+    "type"		:	"tool",
+    "tags"		:	[ "build", "fun"],
+    "description":	"An addon that adds a WebAudio class to allow for server sync with client IGmodAudioChannels to make efficient & safe E2 Media URL Streams",
+    "author" : "Vurv",
+    "ignore"	:
+    [
+        ".github",
+        ".git",
+        "*.md",
+        "*.jpg",
+        "*.bat",
+        "temp.gma",
+        ".gitattributes",
+        ".glualint.json"
+    ]
+}
