@@ -32,6 +32,8 @@ local Common = include("autorun/wa_common.lua")
 local printf, whitelisted = Common.printf, Common.isWhitelistedURL
 
 net.Receive("wa_create", function(len)
+    if not Common.WAEnabled:GetBool() then return end
+
     local id, url, flags, owner = net.ReadUInt(8), net.ReadString(), net.ReadString(), net.ReadEntity()
     if whitelisted(url) then
         printf(">> User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)

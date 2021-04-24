@@ -1,4 +1,4 @@
-# WebAudio [![License](https://img.shields.io/github/license/Vurv78/WebAudio?color=red)](https://opensource.org/licenses/MIT) [![Linter Badge](https://github.com/Vurv78/WebAudio/actions/workflows/linter/badge.svg)](https://github.com/Vurv78/WebAudio/actions)
+# WebAudio [![License](https://img.shields.io/github/license/Vurv78/WebAudio?color=red)](https://opensource.org/licenses/MIT) [![Linter Badge](https://github.com/Vurv78/WebAudio/actions/workflows/linter/badge.svg)](https://github.com/Vurv78/WebAudio/actions) [![github/Vurv78](https://discordapp.com/api/guilds/824727565948157963/widget.png)](https://discord.gg/epJFC6cNsw)
 
 This is an addon for garrysmod that adds a serverside ``WebAudio`` class which can be used to interact with clientside IGmodAudioChannels asynchronously.  
 It also adds an extension for Expression2 to interact with these in a safe manner.  

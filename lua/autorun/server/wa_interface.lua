@@ -93,7 +93,7 @@ function WebAudio:Transmit()
                 net.WriteBool(self.playing)
             end
         end
-    net.Broadcast()
+    net.Broadcast() -- TODO: Don't broadcast to people who have it disabled. Use getinfonum or addChangedCallback to build a table of players to send to. Efficient.
     self.modified = 0 -- Reset any modifications
 end
 
