@@ -36,16 +36,15 @@ net.Receive("wa_create", function(len)
     if whitelisted(url) then
         printf(">> User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
         sound.PlayURL(url, flags, function(bass, errid, errname)
-            if errid ~= 0 then
-                print("Loaded!", id, url)
+            if not errid then
                 Audios[id].bass = bass
 
                 local changes_awaiting = AwaitingChanges[id]
                 if changes_awaiting then
                     handleChanges(id, changes_awaiting)
+                    AwaitingChanges[id] = nil
                 end
             end
-            print(errid, errname)
         end)
         Audios[id] = WAudio(id, url, owner)
     else
@@ -62,8 +61,6 @@ function storeChanges(id, modify_enum, handle_bass)
 
     if hasModifyFlag(modify_enum, Modify.destroyed) then
         self.destroyed = true
-
-        print("Destroyed audio object!")
         if handle_bass then
             bass:Stop()
             Audios[ self.id ] = nil
@@ -126,7 +123,6 @@ function handleChanges(id, modify_enum)
     local bass = self.bass
 
     if hasModifyFlag(modify_enum, Modify.destroyed) then
-        print("Destroyed audio object!")
         bass:Stop()
 
         Audios[ self.id ] = nil
@@ -156,7 +152,6 @@ function handleChanges(id, modify_enum)
 
     -- Playing / Paused state changed
     if hasModifyFlag(modify_enum, Modify.playing) then
-        print("Playing changed", self.playing)
         if self.playing then
             -- If changed to be playing, play. Else stop
             bass:Play()
@@ -170,6 +165,7 @@ net.Receive("wa_change", function(len)
     local id, modify_enum = net.ReadUInt(8), net.ReadUInt(8)
     local obj = Audios[id]
 
+    if AwaitingChanges[id] then return end
     if not obj then return end -- Hm..
 
     if obj.bass then

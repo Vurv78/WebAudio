@@ -20,53 +20,52 @@ local function getID()
     return current_id
 end
 
-function WebAudio:SetModify(n)
+function WebAudio:AddModify(n)
     self.modified = bit.bor(self.modified, n)
 end
 
 function WebAudio:SetVolume(n)
     if isnumber(n) then
         self.volume = n
-        self:SetModify(Modify.volume)
+        self:AddModify(Modify.volume)
     end
 end
 
 function WebAudio:SetTime(time)
     if isnumber(time) then
         self.time = time
-        self:SetModify(Modify.time)
+        self:AddModify(Modify.time)
     end
 end
 
 function WebAudio:SetPos(v)
     if isvector(v) then
         self.pos = v
-        self:SetModify(Modify.pos)
+        self:AddModify(Modify.pos)
     end
 end
 
 function WebAudio:Play()
-    self:SetModify(Modify.playing)
+    self:AddModify(Modify.playing)
     self.playing = true
     self:Transmit()
 end
 
 function WebAudio:Stop()
-    self:SetModify(Modify.playing)
+    self:AddModify(Modify.playing)
     self.playing = false
     self:Transmit()
 end
 
 function WebAudio:SetPlaybackRate(rate)
     if isnumber(rate) then
-        self.playback_rate = v
-        self:SetModify(Modify.playback_rate)
+        self.playback_rate = rate
+        self:AddModify(Modify.playback_rate)
     end
 end
 
 local hasModifyFlag = Common.hasModifyFlag
 function WebAudio:Transmit()
-    -- Todo: Check if you can play and send net msg
     net.Start("wa_change", true)
         -- Always present values
         net.WriteUInt(self.id, 8)
@@ -95,11 +94,12 @@ function WebAudio:Transmit()
             end
         end
     net.Broadcast()
+    self.modified = 0 -- Reset any modifications
 end
 
 function WebAudio:Destroy()
     self.destroyed = true
-    self:SetModify(Modify.destroyed)
+    self:AddModify(Modify.destroyed)
     self:Transmit()
     self = nil
 end
