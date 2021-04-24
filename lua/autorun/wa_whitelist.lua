@@ -20,7 +20,7 @@ local registers = { ["pattern"] = pattern, ["simple"] = simple }
 local Whitelist = {
     -- Soundcloud
     pattern [[%w+%.sndcdn%.com]],
-    
+
     -- Google Translate Api
     simple [[translate.google.com]],
 

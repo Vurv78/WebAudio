@@ -53,7 +53,7 @@ local stream_count = WireLib.RegisterPlayerTable()
 local creationtime_tracker = WireLib.RegisterPlayerTable()
 e2function webaudio createWebAudio(string url)
     local owner = self.player
-    
+
     local now, last = SysTime(), creationtime_tracker[owner] or 0
     if now - last < 0.15 then
         error("You are creating webaudios too fast.")

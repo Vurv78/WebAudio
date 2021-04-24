@@ -18,7 +18,7 @@ local function createObject(_, id, url, owner, bass)
     -- Default values if WebAudio:Play()'d without any prior info set into the object
     self.pos = Vector()
     self.time = 0
-    self.destroyed = false 
+    self.destroyed = false
     self.playback_rate = 1
     self.volume = 1
     self.playing = false

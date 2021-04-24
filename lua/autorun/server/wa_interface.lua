@@ -6,8 +6,6 @@ local Modify, isWhitelisted = Common.Modify, Common.isWhitelistedURL
 util.AddNetworkString("wa_create")
 util.AddNetworkString("wa_change")
 
-local Interfaces = {}
-
 _G.WebAudio = {} -- Interface to clientside Bass objects.
 WebAudio.__index = WebAudio
 
