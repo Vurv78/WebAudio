@@ -123,9 +123,9 @@ e2function void webaudio:play()
 end
 
 __e2setcost(15)
-e2function void webaudio:stop()
+e2function void webaudio:pause()
     local this = expect_audio(this)
-    this:Stop()
+    this:Pause()
 end
 
 __e2setcost(5)

@@ -1,7 +1,7 @@
 
 
 local Common = include("autorun/wa_common.lua")
-local printf, whitelisted = Common.printf, Common.isWhitelistedURL
+local warn, notify, whitelisted = Common.warn, Common.notify, Common.isWhitelistedURL
 local Enabled = Common.WAEnabled
 
 local Audios, AwaitingChanges, WAudio = {}, {}, {}
@@ -32,10 +32,13 @@ setmetatable(WAudio, { __call = createObject })
 net.Receive("wa_create", function(len)
     local id, url, flags, owner = net.ReadUInt(8), net.ReadString(), net.ReadString(), net.ReadEntity()
 
-    if not Enabled:GetBool() then printf("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url) return end
+    if not Enabled:GetBool() then
+        notify("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url)
+        return
+    end
 
     if whitelisted(url) then
-        printf(">> User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
+        notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
         sound.PlayURL(url, flags, function(bass, errid, errname)
             if not errid then
                 Audios[id].bass = bass
@@ -49,7 +52,7 @@ net.Receive("wa_create", function(len)
         end)
         Audios[id] = WAudio(id, url, owner)
     else
-        printf(">> User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner, owner:SteamID64(), url)
+        warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner, owner:SteamID64(), url)
     end
 end)
 
@@ -124,7 +127,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
                 -- If changed to be playing, play. Else stop
                 bass:Play()
             else
-                bass:Stop()
+                bass:Pause()
             end
         end
     end

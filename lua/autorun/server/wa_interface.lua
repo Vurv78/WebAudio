@@ -58,7 +58,7 @@ function WebAudio:Play()
     self:Transmit()
 end
 
-function WebAudio:Stop()
+function WebAudio:Pause()
     self:AddModify(Modify.playing)
     self.playing = false
     self:Transmit()

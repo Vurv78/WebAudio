@@ -53,10 +53,10 @@ if file.Exists("webaudio_whitelist.txt", "DATA") then
             ind = ind + 1
         elseif type ~= nil then
             -- Make sure type isn't nil so we ignore empty lines
-            ErrorNoHalt("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
+            warn("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
         end
     end
-    print(">> Whitelist from webaudio_whitelist.txt found and parsed with " .. ind .. " entries!")
+    print("Whitelist from webaudio_whitelist.txt found and parsed with " .. ind .. " entries!")
     Whitelist = new_list
 end
 
