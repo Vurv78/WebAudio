@@ -9,6 +9,10 @@ desc("webAudio(s)", "Creates and returns WebAudio type")
 desc("webAudiosLeft()", "Returns the number of WebAudio objects you can create in total for your player")
 desc("webAudioCanCreate()", "Returns whether you can create a WebAudio object. Only returns if the cooldown is done to create an object, use in conjunction with webAudiosLeft.")
 
+-- Permissions
+desc("webAudioEnabled()", "Returns whether WebAudio playing is enabled on the server for E2")
+desc("webAudioAdminOnly()", "Returns whether WebAudio playing is restricted to admins or super admins. 0 for everyone, 1 for admins, 2 for superadmins")
+
 -- WebAudio Methods
 desc("setDirection(wxa:v)", "Sets the direction in which the WebAudio stream is playing towards")
 desc("update(xwa:)", "Updates and sends all of the new information changed about the WebAudio to the client. You need to call this whenever you change something like position or volume!")

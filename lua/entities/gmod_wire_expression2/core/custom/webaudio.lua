@@ -6,6 +6,8 @@ E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass Audio playing to E2.")
 local Common = include("autorun/wa_common.lua")
 local isWebAudio = Common.isWebAudio
 
+local Enabled = Common.WAEnabled
+local AdminOnly = Common.WAAdminOnly
 local MaxStreams = Common.WAMaxStreamsPerUser
 
 registerType("webaudio", "xwa", nil,
@@ -48,11 +50,24 @@ e2function number operator_is(webaudio wa)
     return co and 1 or 0
 end
 
+local function checkPermissions(ply)
+    if not Enabled:GetBool() then error("WebAudio is currently disabled on the server!") end
+
+    local required_lv = AdminOnly:GetInt()
+    if required_lv == 1 then
+        if not ply:IsAdmin() then error("WebAudio is currently restricted to admins!") end
+    elseif required_lv == 2 then
+        if not ply:IsSuperAdmin() then error("WebAudio is currently restricted to super-admins!") end
+    end
+end
+
 __e2setcost(50)
 local stream_count = WireLib.RegisterPlayerTable()
 local creationtime_tracker = WireLib.RegisterPlayerTable()
 e2function webaudio webAudio(string url)
     local owner = self.player
+
+    checkPermissions(owner)
 
     local now, last = SysTime(), creationtime_tracker[owner] or 0
     if now - last < 0.15 then
@@ -70,7 +85,15 @@ end
 
 e2function number webAudioCanCreate()
     local now, last = SysTime(), creationtime_tracker[owner] or 0
-    return now - last > 0.15
+    return (now - last > 0.15)
+end
+
+e2function number webAudioEnabled()
+    return Enabled:GetInt()
+end
+
+e2function number webAudioAdminOnly()
+    return AdminOnly:GetInt()
 end
 
 __e2setcost(2)

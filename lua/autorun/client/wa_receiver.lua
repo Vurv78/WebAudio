@@ -1,12 +1,12 @@
 
 
-local Audios = {}
-local AwaitingChanges = {}
+local Common = include("autorun/wa_common.lua")
+local printf, whitelisted = Common.printf, Common.isWhitelistedURL
+local Enabled = Common.WAEnabled
 
-local WAudio = {}
+local Audios, AwaitingChanges, WAudio = {}, {}, {}
 WAudio.__index = WAudio
-
-local updateObject
+local updateObject -- To be declared below
 
 local function createObject(_, id, url, owner, bass)
     local self = setmetatable({}, WAudio)
@@ -22,19 +22,18 @@ local function createObject(_, id, url, owner, bass)
     self.playback_rate = 1
     self.volume = 1
     self.playing = false
+    self.direction = Vector()
 
     return self
 end
 
 setmetatable(WAudio, { __call = createObject })
 
-local Common = include("autorun/wa_common.lua")
-local printf, whitelisted = Common.printf, Common.isWhitelistedURL
-
 net.Receive("wa_create", function(len)
-    if not Common.WAEnabled:GetBool() then return end
-
     local id, url, flags, owner = net.ReadUInt(8), net.ReadString(), net.ReadString(), net.ReadEntity()
+
+    if not Enabled:GetBool() then printf("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url) return end
+
     if whitelisted(url) then
         printf(">> User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
         sound.PlayURL(url, flags, function(bass, errid, errname)
@@ -104,6 +103,15 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         if inside_net then self.playback_rate = net.ReadFloat() end
         if handle_bass then
             bass:SetPlaybackRate(self.playback_rate)
+        end
+    end
+
+    -- Direction changed.
+    if hasModifyFlag(modify_enum, Modify.direction) then
+        if inside_net then self.direction = net.ReadVector() end
+        -- Should always be true so..
+        if handle_bass then
+            bass:SetPos(self.pos, self.direction)
         end
     end
 
