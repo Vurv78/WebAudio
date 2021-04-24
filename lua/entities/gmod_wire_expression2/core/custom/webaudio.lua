@@ -51,7 +51,7 @@ end
 __e2setcost(50)
 local stream_count = WireLib.RegisterPlayerTable()
 local creationtime_tracker = WireLib.RegisterPlayerTable()
-e2function webaudio createWebAudio(string url)
+e2function webaudio webAudio(string url)
     local owner = self.player
 
     local now, last = SysTime(), creationtime_tracker[owner] or 0
@@ -68,7 +68,7 @@ e2function webaudio createWebAudio(string url)
     return registerStream(self, WebAudio(url, owner), owner)
 end
 
-e2function number canCreateWebAudio()
+e2function number webAudioCanCreate()
     local now, last = SysTime(), creationtime_tracker[owner] or 0
     return now - last > 0.15
 end
@@ -121,6 +121,11 @@ end
 e2function void webaudio:setPlaybackRate(number rate)
     local this = expect_audio(this)
     this:SetPlaybackRate(rate)
+end
+
+e2function void webaudio:setDirection(vector dir)
+    local this = expect_audio(this)
+    this:SetDirection(dir)
 end
 
 __e2setcost(15)

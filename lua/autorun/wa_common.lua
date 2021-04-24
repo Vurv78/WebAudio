@@ -19,7 +19,9 @@ local Modify = {
     pos = 4,
     playing = 8,
     playback_rate = 16,
-    destroyed = 32,
+    direction = 32,
+
+    destroyed = 64,
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end

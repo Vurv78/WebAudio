@@ -45,6 +45,13 @@ function WebAudio:SetPos(v)
     end
 end
 
+function WebAudio:SetDirection(dir)
+    if isvector(dir) then
+        self.direction = dir
+        self:AddModify(Modify.direction)
+    end
+end
+
 function WebAudio:Play()
     self:AddModify(Modify.playing)
     self.playing = true
@@ -83,6 +90,10 @@ function WebAudio:Transmit()
 
             if hasModifyFlag(modified, Modify.pos) then
                 net.WriteVector(self.pos)
+            end
+
+            if hasModifyFlag(modified, Modify.direction) then
+                net.WriteVector(self.direction)
             end
 
             if hasModifyFlag(modified, Modify.playback_rate) then
