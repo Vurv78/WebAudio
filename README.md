@@ -79,5 +79,17 @@ Destroys the WebAudio object, rendering it useless. It will silently fail when t
 ``number webaudio:update()``  
 Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
 
-``number webaudio:isDestroyed()``
+``number webaudio:isDestroyed()``  
 Returns 1 or 0 for whether the webaudio object is destroyed or not
+
+``void webaudio:setParent(entity e)``  
+Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid. Does not update the object.
+
+``void webaudio:setParent()``  
+Unparents the stream from the currently parented entity. Does not update the object.
+
+``void webaudio:parentTo(entity e)``  
+Alias of webaudio:setParent(e) Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Does not update the object.
+
+``void webaudio:unparent()``  
+Alias of webaudio:setParent(), Unparents the stream from the currently parented entity. Does not update the object.

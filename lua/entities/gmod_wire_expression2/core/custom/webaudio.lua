@@ -1,7 +1,7 @@
 
 
 
-E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass Audio playing to E2.")
+E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web streaming to E2.")
 
 local Common = include("autorun/wa_common.lua")
 local isWebAudio = Common.isWebAudio
@@ -29,24 +29,25 @@ registerType("webaudio", "xwa", nil,
     end
 )
 
-local function registerStream(self, obj, owner)
-    table.insert(self.webaudio_streams, obj)
-    return obj
+local function registerStream(self, url, owner)
+    local stream = WebAudio(url, owner)
+    table.insert(self.webaudio_streams, stream)
+    return stream
 end
 
 __e2setcost(1)
-e2function webaudio operator=(webaudio lhs, webaudio rhs) -- Co = coroutine("bruh(e:)")
+e2function webaudio operator=(webaudio lhs, webaudio rhs) -- Wa = webAudio("...") (Rip Coroutine Core comments)
     local scope = self.Scopes[ args[4] ]
     scope[lhs] = rhs
     scope.vclk[lhs] = true
     return rhs
 end
 
-e2function number operator==(webaudio lhs, webaudio rhs) -- if(coroutineRunning()==Co)
+e2function number operator==(webaudio lhs, webaudio rhs) -- if(webAudio("...")==Wa)
     return lhs == rhs
 end
 
-e2function number operator!=(webaudio lhs, webaudio rhs) -- if(coroutineRunning()!=Co)
+e2function number operator!=(webaudio lhs, webaudio rhs) -- if(Wa!=Wa)
     return lhs ~= rhs
 end
 
@@ -54,7 +55,7 @@ e2function number operator_is(webaudio wa)
     return co and 1 or 0
 end
 
-local function checkPermissions(ply)
+local function checkPermissions(ply, ent)
     if not Enabled:GetBool() then error("WebAudio is currently disabled on the server!") end
 
     local required_lv = AdminOnly:GetInt()
@@ -63,13 +64,18 @@ local function checkPermissions(ply)
     elseif required_lv == 2 then
         if not ply:IsSuperAdmin() then error("WebAudio is currently restricted to super-admins!") end
     end
+
+    if prop then
+        -- Checking if you have perms to modify this prop.
+        if not E2Lib.isOwner(ply, ent) then error("You do not have permissions to modify this prop!") end
+    end
 end
 
 local function canTransmit(ply)
     local now = SysTime()
     local last = LastTransmissions[ply] or 0
-    if now - last > 0.15 then
-        -- Every player has a 150ms delay between updates for webaudios
+    if now - last > 0.1 then
+        -- Every player has a 100ms delay between net transmissions
         LastTransmissions[ply] = now
         return true
     else
@@ -80,21 +86,23 @@ end
 __e2setcost(50)
 e2function webaudio webAudio(string url)
     local owner = self.player
-
     checkPermissions(owner)
 
+    -- Creation Time Quota
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
         error("You are creating webaudios too fast.")
     end
     CreationTimeTracker[owner] = now
 
+    -- Stream Count Quota
     local count = StreamCounter[owner] or 0
     if count+1 > MaxStreams:GetInt() then
         error("Reached maximum amount of WebAudio streams!")
     end
     StreamCounter[owner] = count + 1
-    return registerStream(self, WebAudio(url, owner), owner)
+
+    return registerStream(self, url, owner)
 end
 
 __e2setcost(2)
@@ -193,6 +201,18 @@ __e2setcost(2)
 e2function webaudio nowebaudio()
     return nil
 end
+
+__e2setcost(5)
+e2function number webaudio:setParent(entity parent)
+    checkPermissions(self.player, parent)
+    this:SetParent(parent)
+    return 1
+end
+
+e2function void webaudio:setParent() this:SetParent(nil) end
+
+e2function void webaudio:parentTo(entity ent) = e2function void webaudio:setParent(entity parent) -- Alias
+e2function void webaudio:unparent() = e2function void webaudio:setParent() -- Alias
 
 registerCallback("construct", function(self)
     self.webaudio_streams = {}

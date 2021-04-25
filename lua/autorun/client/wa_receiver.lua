@@ -13,7 +13,7 @@ local function createObject(_, id, url, owner, bass)
     -- Mutable
     self.volume = 1
     self.time = 0
-    self.pos = Vector()
+    self.pos = nil -- Start as nil for parenting to work.
     self.playing = false
     self.playback_rate = 1
     self.modified = 0
@@ -24,7 +24,11 @@ local function createObject(_, id, url, owner, bass)
     self.id = id
     self.url = url
     self.owner = owner
+
+    -- Receiver Only
     self.bass = bass
+    self.parent_pos = Vector()
+    -- Receiver Only
 
     return self
 end
@@ -74,6 +78,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
     if hasModifyFlag(modify_enum, Modify.destroyed) then
         self.destroyed = true
         if handle_bass then
+            timer.Remove("wa_parent_".. self.id) -- Parent timer
             bass:Stop()
             Audios[ self.id ] = nil
             self = nil
@@ -130,6 +135,43 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
                 bass:Play()
             else
                 bass:Pause()
+            end
+        end
+    end
+
+    if hasModifyFlag(modify_enum, Modify.parented) then
+        if inside_net then
+            self.parented = net.ReadBool()
+            if self.parented then
+                local ent = net.ReadEntity()
+                self.parent = ent
+                if self.pos ~= nil then
+                    -- We've initialized and received a changed position before
+                    self.parent_pos = ent:WorldToLocal(self.pos)
+                else
+                    -- self.pos hasn't been touched, play the sound at the entity's position.
+                    self.parent_pos = Vector()
+                end
+            else
+                timer.Remove("wa_parent_".. self.id)
+                self.parent = nil
+            end
+        end
+
+        if handle_bass then
+            if self.parented then
+                local parent = self.parent
+                if parent and parent ~= NULL then
+                    bass:SetPos( self.parent:LocalToWorld(self.parent_pos) )
+                end
+                timer.Create("wa_parent_".. self.id, 0.1, 0, function()
+                    if parent ~= NULL then
+                        bass:SetPos( parent:LocalToWorld(self.parent_pos) )
+                    elseif self.id then
+                        -- If the prop was removed but the stream hasn't been destroyed, remove the timer here.
+                        timer.Remove("wa_parent_".. self.id)
+                    end
+                end)
             end
         end
     end

@@ -54,9 +54,10 @@ end
 
 --- Sets the position of the stream.
 -- @param Vector v Position
--- @return boolean Whether the position was set. Will return nil if stream is destroyed or v is not vector
+-- @return boolean Whether the position was set. Will return nil if stream is destroyed, v is not vector, or if the stream is parented.
 function WebAudio:SetPos(v)
     if self:IsDestroyed() then return end
+    if self:IsParented() then return end
     if isvector(v) then
         self.pos = v
         self:AddModify(Modify.pos)
@@ -106,6 +107,48 @@ function WebAudio:SetPlaybackRate(rate)
     end
 end
 
+--- Destroys the WebAudio object.
+-- @return boolean Whether it was successfully destroyed. Returns false if it was already destroyed.
+function WebAudio:Destroy()
+    if self:IsDestroyed() then return end
+    self:AddModify(Modify.destroyed)
+    self:Transmit()
+
+    for k in next,self do
+        self[k] = nil
+    end
+    self.destroyed = true
+    return true
+end
+
+--- Returns whether the WebAudio object is destroyed
+-- @return boolean Whether it's destroyed
+function WebAudio:IsDestroyed()
+    return self.destroyed
+end
+
+--- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
+-- @return boolean Whether it's parented
+function WebAudio:IsParented()
+    return self.parented
+end
+
+--- Sets the parent of the WebAudio object. Nil to unparent
+-- @param entity? parent Entity to parent to or nil to unparent.
+-- @return boolean Whether it was successfully destroyed. Returns false if it was already destroyed.
+function WebAudio:SetParent(ent)
+    if self:IsDestroyed() then return end
+    if isentity(ent) and ent:IsValid() then
+        self.parented = true
+        self.parent = ent
+    else
+        self.parented = false
+        self.parent = nil
+    end
+    self:AddModify(Modify.parented)
+    return true
+end
+
 local hasModifyFlag = Common.hasModifyFlag
 --- Transmits all stored data on the server about the WebAudio object to the clients
 -- @return boolean If successfully transmitted.
@@ -141,30 +184,17 @@ function WebAudio:Transmit()
             if hasModifyFlag(modified, Modify.playing) then
                 net.WriteBool(self.playing)
             end
+
+            if hasModifyFlag(modified, Modify.parented) then
+                net.WriteBool(self.parented)
+                if self.parented then
+                    net.WriteEntity(self.parent)
+                end
+            end
         end
     net.Broadcast() -- TODO: Don't broadcast to people who have it disabled. Use getinfonum or addChangedCallback to build a table of players to send to. Efficient.
     self.modified = 0 -- Reset any modifications
     return true
-end
-
---- Destroys the WebAudio object.
--- @return boolean Whether it was successfully destroyed. Returns false if it was already destroyed.
-function WebAudio:Destroy()
-    if self:IsDestroyed() then return end
-    self:AddModify(Modify.destroyed)
-    self:Transmit()
-
-    for k in next,self do
-        self[k] = nil
-    end
-    self.destroyed = true
-    return true
-end
-
---- Returns whether the WebAudio object is destroyed
--- @return boolean Whether it's destroyed
-function WebAudio:IsDestroyed()
-    return self.destroyed
 end
 
 
@@ -184,6 +214,9 @@ local function createInterface(_, url, owner)
     self.modified = 0
     self.destroyed = false
     self.direction = Vector()
+
+    self.parented = false
+    self.parent = nil
     -- Mutable
 
     self.id = getID()

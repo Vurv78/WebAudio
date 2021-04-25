@@ -27,3 +27,9 @@ desc("play(xwa:)", "Starts the stream or continues where it left off after pausi
 desc("destroy(xwa:)", "Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object")
 desc("update(xwa:)", "Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota")
 desc("isDestroyed(xwa:)", "Returns 1 or 0 for whether the webaudio object is destroyed or not")
+desc("isParented(xwa:)", "Returns 1 or 0 for whether the webaudio object is parented or not. Note that if the stream is parented, you cannot set it's position!")
+desc("setParent(xwa:e)", "Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid")
+desc("setParent(xwa:)", "Unparents the stream")
+
+desc("unparent(xwa:)", "Alias of xwa:setParent(), Unparents the stream")
+desc("parentTo(xwa:e)", "Alias of xwa:setParent(), Parents the stream to entity e")
