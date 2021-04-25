@@ -78,7 +78,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
     if hasModifyFlag(modify_enum, Modify.destroyed) then
         self.destroyed = true
         if handle_bass then
-            timer.Remove("wa_parent_".. self.id) -- Parent timer
+            timer.Remove("wa_parent_" .. self.id) -- Parent timer
             bass:Stop()
             Audios[ self.id ] = nil
             self = nil
@@ -153,26 +153,24 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
                     self.parent_pos = Vector()
                 end
             else
-                timer.Remove("wa_parent_".. self.id)
+                timer.Remove("wa_parent_" .. self.id)
                 self.parent = nil
             end
         end
 
-        if handle_bass then
-            if self.parented then
-                local parent = self.parent
-                if parent and parent ~= NULL then
-                    bass:SetPos( self.parent:LocalToWorld(self.parent_pos) )
-                end
-                timer.Create("wa_parent_".. self.id, 0.1, 0, function()
-                    if parent ~= NULL then
-                        bass:SetPos( parent:LocalToWorld(self.parent_pos) )
-                    elseif self.id then
-                        -- If the prop was removed but the stream hasn't been destroyed, remove the timer here.
-                        timer.Remove("wa_parent_".. self.id)
-                    end
-                end)
+        if handle_bass and self.parented then
+            local parent = self.parent
+            if parent and parent ~= NULL then
+                bass:SetPos( self.parent:LocalToWorld(self.parent_pos) )
             end
+            timer.Create("wa_parent_" .. self.id, 0.1, 0, function()
+                if parent ~= NULL then
+                    bass:SetPos( parent:LocalToWorld(self.parent_pos) )
+                elseif self.id then
+                    -- If the prop was removed but the stream hasn't been destroyed, remove the timer here.
+                    timer.Remove("wa_parent_" .. self.id)
+                end
+            end)
         end
     end
 end
