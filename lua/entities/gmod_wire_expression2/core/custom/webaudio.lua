@@ -122,7 +122,7 @@ e2function void webaudio:setPos(vector pos)
 end
 
 __e2setcost(15)
-e2function void webaudio:play()
+e2function number webaudio:play()
     checkPermissions(self.player)
     if canTransmit(self.player) then
         this:Play()

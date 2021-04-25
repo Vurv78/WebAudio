@@ -67,14 +67,17 @@ Sets the time in which the WebAudio stream should seek to in playing the URL. Do
 ``void webaudio:setPlaybackRate(number rate)``  
 Sets the playback speed of a webaudio stream. 2 is twice as fast, 0.5 being half, etc. Does not update the object.
 
-``void webaudio:pause()``  
+``number webaudio:pause()``  
 Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.
 
-``void webaudio:play()``  
+``number webaudio:play()``  
 Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.
 
 ``void webaudio:destroy()``  
 Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object
 
-``void webaudio:update()``  
-Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client.
+``number webaudio:update()``  
+Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
+
+``number webaudio:isDestroyed()``
+Returns 1 or 0 for whether the webaudio object is destroyed or not
