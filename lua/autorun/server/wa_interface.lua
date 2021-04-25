@@ -20,59 +20,97 @@ local function getID()
     return current_id
 end
 
+--- Adds a modify flag to the payload to be sent on transmission
+-- @param number n Modify flag from the Modify struct in wa_common
+-- @return boolean Whether it modified. Will return nil if stream is destroyed.
 function WebAudio:AddModify(n)
+    if self:IsDestroyed() then return end
     self.modified = bit.bor(self.modified, n)
 end
 
+--- Sets the volume of the stream
+-- Does not transmit
+-- @param number n Volume (1 is 100%, 2 is 200% ..)
+-- @return boolean Whether volume was set. Will return nil if stream is destroyed or n is not number
 function WebAudio:SetVolume(n)
+    if self:IsDestroyed() then return end
     if isnumber(n) then
         self.volume = n
         self:AddModify(Modify.volume)
     end
 end
 
+--- Sets the current playback time of the stream.
+-- Does not transmit
+-- @param number time Playback time
+-- @return boolean Whether playback time was successfully set. Will return nil if stream is destroyed or time is not number
 function WebAudio:SetTime(time)
+    if self:IsDestroyed() then return end
     if isnumber(time) then
         self.time = time
         self:AddModify(Modify.time)
     end
 end
 
+--- Sets the position of the stream.
+-- @param Vector v Position
+-- @return boolean Whether the position was set. Will return nil if stream is destroyed or v is not vector
 function WebAudio:SetPos(v)
+    if self:IsDestroyed() then return end
     if isvector(v) then
         self.pos = v
         self:AddModify(Modify.pos)
     end
 end
 
+--- Sets the direction in which the stream will play
+-- @param Vector dir Direction to set to
+-- @return boolean Whether the direction was successfully set. Will return nil if stream is destroyed or dir is not vector.
 function WebAudio:SetDirection(dir)
+    if self:IsDestroyed() then return end
     if isvector(dir) then
         self.direction = dir
         self:AddModify(Modify.direction)
+        return true
     end
 end
 
+--- Resumes or starts the stream.
+-- @return boolean Successfully played, will return nil if the stream is destroyed
 function WebAudio:Play()
+    if self:IsDestroyed() then return end
     self:AddModify(Modify.playing)
     self.playing = true
     self:Transmit()
+    return true
 end
 
+--- Pauses the stream and automatically transmits.
+-- @return boolean Successfully paused, will return nil if the stream is destroyed
 function WebAudio:Pause()
+    if self:IsDestroyed() then return end
     self:AddModify(Modify.playing)
     self.playing = false
     self:Transmit()
+    return true
 end
 
+--- Sets the playback rate of the stream.
+-- @return boolean Successfully set rate, will return false if rate is not a number or if the stream is destroyed
 function WebAudio:SetPlaybackRate(rate)
+    if self:IsDestroyed() then return end
     if isnumber(rate) then
         self.playback_rate = rate
         self:AddModify(Modify.playback_rate)
+        return true
     end
 end
 
 local hasModifyFlag = Common.hasModifyFlag
+--- Transmits all stored data on the server about the WebAudio object to the clients
+-- @return boolean If successfully transmitted.
 function WebAudio:Transmit()
+    if self:IsDestroyed() then return end
     net.Start("wa_change", true)
         -- Always present values
         net.WriteUInt(self.id, 8)
@@ -106,15 +144,25 @@ function WebAudio:Transmit()
         end
     net.Broadcast() -- TODO: Don't broadcast to people who have it disabled. Use getinfonum or addChangedCallback to build a table of players to send to. Efficient.
     self.modified = 0 -- Reset any modifications
+    return true
 end
 
+--- Destroys the WebAudio object.
+-- @return boolean Whether it was successfully destroyed. Returns false if it was already destroyed.
 function WebAudio:Destroy()
-    self.destroyed = true
+    if self:IsDestroyed() then return end
     self:AddModify(Modify.destroyed)
     self:Transmit()
-    self = nil
+
+    for k in next,self do
+        self[k] = nil
+    end
+    self.destroyed = true
+    return true
 end
 
+--- Returns whether the WebAudio object is destroyed
+-- @return boolean Whether it's destroyed
 function WebAudio:IsDestroyed()
     return self.destroyed
 end
@@ -122,17 +170,20 @@ end
 
 local function createInterface(_, url, owner)
     assert( url and isstring(url) and isWhitelisted(url), "'url' argument must be given a whitelisted url string." )
-    --assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." ) -- For now each interface needs an owner.
+    -- assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." )
+    -- Commenting this out in case someone wants a webaudio object to be owned by the world or something.
 
     local self = setmetatable({}, WebAudio)
 
     -- Mutable
     self.volume = 1
     self.time = 0
-    self.pos = pos
+    self.pos = Vector()
     self.playing = false
     self.playback_rate = 1
     self.modified = 0
+    self.destroyed = false
+    self.direction = Vector()
     -- Mutable
 
     self.id = getID()

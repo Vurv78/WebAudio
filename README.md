@@ -50,29 +50,31 @@ Returns whether webAudio is enabled for use on the server.
 ``number webAudioAdminOnly()``  
 Returns 0 if webAudio is available to everyone, 1 if only admins, 2 if only superadmins.
 
-``void webaudio:setDirection(vector dir)``  
-Sets the direction where the sound will play toward.
+### WebAudio Type Methods
 
-``void webaudio:update()``  
-Updates all the information of the object and sends it to the client. You need to call this after running functions like ``play`` and ``setVolume``.
+``void webaudio:setDirection(vector dir)``  
+Sets the direction in which the WebAudio stream is playing towards. Does not update the object.
 
 ``void webaudio:setPos(vector pos)``  
-Sets the position of the WebAudio stream.
+Sets the 3D Position of the WebAudio stream without updating it. Does not update the object.
 
 ``void webaudio:setVolume(number volume)``  
-Sets the volume of the WebAudio stream, in a 0-100 range, 100 being 100%, 200 being 200%, etc. Will error if it is past ``wa_volume_max``.
+Sets the volume of the WebAudio stream, in percent format. 200 is 2x as loud as normal, 100 is default. Will error if it is past ``wa_volume_max``.
 
 ``void webaudio:setTime(number time)``  
-Sets the time in which the WebAudio stream should seek to in playing the URL.
+Sets the time in which the WebAudio stream should seek to in playing the URL. Does not update the object.
 
 ``void webaudio:setPlaybackRate(number rate)``  
-Sets how fast the stream will play the URL. 2 being twice as fast, 0.5 being half, etc.
+Sets the playback speed of a webaudio stream. 2 is twice as fast, 0.5 being half, etc. Does not update the object.
 
 ``void webaudio:pause()``  
-Pauses the Stream where it is currently playing, to be resumed with ``play``.
+Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.
 
 ``void webaudio:play()``  
-Sets the stream to play. Note you still need to call ``webaudio:update()`` after this, for this to work.
+Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.
 
 ``void webaudio:destroy()``  
-Destroys the WebAudio object, rendering it useless. Frees another slot to make a WebAudio stream.
+Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object
+
+``void webaudio:update()``  
+Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client.

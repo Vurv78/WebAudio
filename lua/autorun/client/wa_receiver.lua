@@ -10,19 +10,21 @@ local updateObject -- To be declared below
 
 local function createObject(_, id, url, owner, bass)
     local self = setmetatable({}, WAudio)
+    -- Mutable
+    self.volume = 1
+    self.time = 0
+    self.pos = Vector()
+    self.playing = false
+    self.playback_rate = 1
+    self.modified = 0
+    self.destroyed = false
+    self.direction = Vector()
+    -- Mutable
+
     self.id = id
     self.url = url
     self.owner = owner
     self.bass = bass
-
-    -- Default values if WebAudio:Play()'d without any prior info set into the object
-    self.pos = Vector()
-    self.time = 0
-    self.destroyed = false
-    self.playback_rate = 1
-    self.volume = 1
-    self.playing = false
-    self.direction = Vector()
 
     return self
 end

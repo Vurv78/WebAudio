@@ -30,8 +30,8 @@ local function isWebAudio(v)
 end
 
 -- Modification Enum.
--- If you ever change a setting of the Interface object, will add one of these flags to it, to be sent to the client to know
--- What to read.
+-- If you ever change a setting of the Interface object, will add one of these flags to it.
+-- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
     volume = 1,
     time = 2,

@@ -10,6 +10,10 @@ local Enabled = Common.WAEnabled
 local AdminOnly = Common.WAAdminOnly
 local MaxStreams = Common.WAMaxStreamsPerUser
 
+local StreamCounter = WireLib.RegisterPlayerTable() -- Prevent having more streams than wa_max_streams
+local CreationTimeTracker = WireLib.RegisterPlayerTable() -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
+local LastTransmissions = WireLib.RegisterPlayerTable() -- In order to prevent too many updates at once.
+
 registerType("webaudio", "xwa", nil,
     nil,
     nil,
@@ -61,30 +65,41 @@ local function checkPermissions(ply)
     end
 end
 
+local function canTransmit(ply)
+    local now = SysTime()
+    local last = LastTransmissions[ply] or 0
+    if now - last > 0.15 then
+        -- Every player has a 150ms delay between updates for webaudios
+        LastTransmissions[ply] = now
+        return true
+    else
+        return false
+    end
+end
+
 __e2setcost(50)
-local stream_count = WireLib.RegisterPlayerTable()
-local creationtime_tracker = WireLib.RegisterPlayerTable()
 e2function webaudio webAudio(string url)
     local owner = self.player
 
     checkPermissions(owner)
 
-    local now, last = SysTime(), creationtime_tracker[owner] or 0
+    local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
         error("You are creating webaudios too fast.")
     end
-    creationtime_tracker[owner] = now
+    CreationTimeTracker[owner] = now
 
-    local count = stream_count[owner] or 0
+    local count = StreamCounter[owner] or 0
     if count+1 > MaxStreams:GetInt() then
         error("Reached maximum amount of WebAudio streams!")
     end
-    stream_count[owner] = count + 1
+    StreamCounter[owner] = count + 1
     return registerStream(self, WebAudio(url, owner), owner)
 end
 
+__e2setcost(2)
 e2function number webAudioCanCreate()
-    local now, last = SysTime(), creationtime_tracker[owner] or 0
+    local now, last = SysTime(), CreationTimeTracker[owner] or 0
     return (now - last > 0.15)
 end
 
@@ -96,84 +111,87 @@ e2function number webAudioAdminOnly()
     return AdminOnly:GetInt()
 end
 
-__e2setcost(2)
 e2function number webAudiosLeft()
-    local ct = stream_count[self.player]
-    return MaxStreams:GetInt() - ct
-end
-
---- Expects a WebAudio object to not be destroyed, else throws an error.
-local function expect_audio(this)
-    if this:IsDestroyed() then
-        error("Invalid WebAudio stream!")
-    end
-    return this
+    return MaxStreams:GetInt() - (StreamCounter[self.player] or 0)
 end
 
 __e2setcost(5)
 e2function void webaudio:setPos(vector pos)
-    local this = expect_audio(this)
+    checkPermissions(self.player)
     this:SetPos(pos)
 end
 
 __e2setcost(15)
 e2function void webaudio:play()
-    local this = expect_audio(this)
-    this:Play()
+    checkPermissions(self.player)
+    if canTransmit(self.player) then
+        this:Play()
+        return 1
+    else
+        return 0
+    end
 end
 
-__e2setcost(15)
-e2function void webaudio:pause()
-    local this = expect_audio(this)
-    this:Pause()
+e2function number webaudio:pause()
+    checkPermissions(self.player)
+    if canTransmit(self.player) then
+        this:Pause()
+        return 1
+    else
+        return 0
+    end
 end
 
 __e2setcost(5)
 e2function void webaudio:setVolume(number vol)
-    local this = expect_audio(this)
+    checkPermissions(self.player)
     local max = Common.WAMaxVolume:GetInt()
     if vol > max then error("Volume is too high, must be [0-" .. max .. "%] !") end
     this:SetVolume(vol/100)
 end
 
 e2function void webaudio:setTime(number time)
-    local this = expect_audio(this)
+    checkPermissions(self.player)
     this:SetTime(time)
 end
 
 e2function void webaudio:setPlaybackRate(number rate)
-    local this = expect_audio(this)
+    checkPermissions(self.player)
     this:SetPlaybackRate(rate)
 end
 
 e2function void webaudio:setDirection(vector dir)
-    local this = expect_audio(this)
+    checkPermissions(self.player)
     this:SetDirection(dir)
 end
 
 __e2setcost(15)
 e2function void webaudio:destroy()
-    local this = expect_audio(this)
-    stream_count[self.player] = stream_count[self.player] - 1
-    this:Destroy()
+    if this:Destroy() then
+        StreamCounter[self.player] = StreamCounter[self.player] - 1
+    end
 end
-
--- In order to prevent too many updates at once.
-local last_transmissions = WireLib.RegisterPlayerTable()
 
 --- Updates the clientside IGmodAudioChannel object to pair with the WebAudio object.
 -- @return number Whether the WebAudio object successfully transmitted. Returns 0 if you are hitting quota.
 e2function number webaudio:update()
-    local now = SysTime()
-    local last = last_transmissions[self.player] or 0
-    if now - last > 0.15 then
-        -- Every player has a 150ms delay between updates for webaudios
+    checkPermissions(self.player)
+    if canTransmit(self.player) then
         this:Transmit()
-        last_transmissions[self.player] = now
         return 1
     else
         return 0
     end
+end
+
+__e2setcost(3)
+e2function number webaudio:isDestroyed()
+    return (not this or this:IsDestroyed()) and 1 or 0
+end
+
+__e2setcost(2)
+e2function webaudio nowebaudio()
+    return nil
 end
 
 registerCallback("construct", function(self)
@@ -182,12 +200,12 @@ end)
 
 registerCallback("destruct", function(self)
     local owner = self.player
-    local count = stream_count[owner]
+    local count = StreamCounter[owner]
     for _, stream in next, self.webaudio_streams do
-        count = count - 1 -- Assume stream_count[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
+        count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
         stream:Destroy()
         stream = nil
     end
-    stream_count[owner] = count
+    StreamCounter[owner] = math.min(count, 0) -- Call min() on it just in case.
     self.webaudio_streams = nil
 end)
