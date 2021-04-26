@@ -4,7 +4,6 @@
 E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web streaming to E2.")
 
 local Common = include("autorun/wa_common.lua")
-local isWebAudio = Common.isWebAudio
 
 local Enabled = Common.WAEnabled
 local AdminOnly = Common.WAAdminOnly
@@ -22,10 +21,10 @@ registerType("webaudio", "xwa", nil,
         -- See https://github.com/wiremod/wire/blob/501dd9875ab1f6db37a795e1f9a946d382db4f1f/lua/entities/gmod_wire_expression2/core/entity.lua#L10
 
         if not ret then return end
-        if not isWebAudio(ret) then throw("Return value is neither nil nor a WebAudio object, but a %s!", type(ret)) end
+        if not WebAudio:instanceOf(ret) then throw("Return value is neither nil nor a WebAudio object, but a %s!", type(ret)) end
     end,
     function(v)
-        return isWebAudio(v)
+        return WebAudio:instanceOf(v)
     end
 )
 
@@ -65,7 +64,7 @@ local function checkPermissions(ply, ent)
         if not ply:IsSuperAdmin() then error("WebAudio is currently restricted to super-admins!") end
     end
 
-    if prop then
+    if ent then
         -- Checking if you have perms to modify this prop.
         if not E2Lib.isOwner(ply, ent) then error("You do not have permissions to modify this prop!") end
     end
@@ -88,18 +87,23 @@ e2function webaudio webAudio(string url)
     local owner = self.player
     checkPermissions(owner)
 
+    if not WebAudio:isWhitelistedURL(url) then
+        error("This URL is not whitelisted on the server! See the default whitelist on github!")
+    end
+
     -- Creation Time Quota
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
-        error("You are creating webaudios too fast. Check webAudioCanCreate before calling!")
-        -- Maybe return an invalid object here? Might be confusing
+        -- error("You are creating webaudios too fast. Check webAudioCanCreate before calling!")
+        return WebAudio:getNULL()
     end
     CreationTimeTracker[owner] = now
 
     -- Stream Count Quota
     local count = StreamCounter[owner] or 0
     if count+1 > MaxStreams:GetInt() then
-        error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
+        -- error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
+        return WebAudio:getNULL()
     end
     StreamCounter[owner] = count + 1
 
@@ -114,6 +118,15 @@ e2function number webAudioCanCreate()
     return 1
 end
 
+__e2setcost(4)
+e2function number webAudioCanCreate(string url)
+    local now, last = SysTime(), CreationTimeTracker[owner] or 0
+    if (now - last < 0.15) then return 0 end -- Creating too fast
+    if (StreamCounter[self.player] or 0) >= MaxStreams:GetInt() then return 0 end
+    if not WebAudio:isWhitelistedURL(url) then return 0 end
+    return 1
+end
+
 e2function number webAudioEnabled()
     return Enabled:GetInt()
 end
@@ -124,6 +137,14 @@ end
 
 e2function number webAudiosLeft()
     return MaxStreams:GetInt() - (StreamCounter[self.player] or 0)
+end
+
+__e2setcost(4)
+e2function number webAudioWhitelisted(string url)
+    if this == nil then return 0 end
+    if not WebAudio:instanceOf(this) then return 0 end
+    if this:IsDestroyed() then return 0 end
+    return 1
 end
 
 __e2setcost(5)
@@ -195,25 +216,14 @@ e2function number webaudio:update()
     end
 end
 
-__e2setcost(3)
-e2function number webaudio:isDestroyed()
-    if this == nil then return 1 end
-    if not isWebAudio(this) then return 1 end
-    if this:IsDestroyed() then return 1 end
-    return 0
-end
-
 __e2setcost(4)
 e2function number webaudio:isValid()
-    if this == nil then return 0 end
-    if not isWebAudio(this) then return 0 end
-    if this:IsDestroyed() then return 0 end
-    return 1
+    return this:IsValid() and 1 or 0
 end
 
 __e2setcost(2)
 e2function webaudio nowebaudio()
-    return nil
+    return WebAudio:getNull()
 end
 
 __e2setcost(5)
@@ -240,6 +250,6 @@ registerCallback("destruct", function(self)
         stream:Destroy()
         stream = nil
     end
-    StreamCounter[owner] = math.min(count, 0) -- Call min() on it just in case.
+    StreamCounter[owner] = count or 0
     self.webaudio_streams = nil
 end)

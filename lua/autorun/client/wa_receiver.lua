@@ -1,15 +1,15 @@
 
 
 local Common = include("autorun/wa_common.lua")
-local warn, notify, whitelisted = Common.warn, Common.notify, Common.isWhitelistedURL
+local warn, notify = Common.warn, Common.notify
 local Enabled = Common.WAEnabled
 
-local Audios, AwaitingChanges, WAudio = {}, {}, {}
-WAudio.__index = WAudio
+local Audios, AwaitingChanges = {}, {}
+
 local updateObject -- To be declared below
 
 local function createObject(_, id, url, owner, bass)
-    local self = setmetatable({}, WAudio)
+    local self = setmetatable({}, WebAudio)
     -- Mutable
     self.volume = 1
     self.time = 0
@@ -33,8 +33,6 @@ local function createObject(_, id, url, owner, bass)
     return self
 end
 
-setmetatable(WAudio, { __call = createObject })
-
 net.Receive("wa_create", function(len)
     local id, url, flags, owner = net.ReadUInt(8), net.ReadString(), net.ReadString(), net.ReadEntity()
 
@@ -43,7 +41,7 @@ net.Receive("wa_create", function(len)
         return
     end
 
-    if whitelisted(url) then
+    if WebAudio:isWhitelistedURL(url) then
         notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
         sound.PlayURL(url, flags, function(bass, errid, errname)
             if not errid then
@@ -56,7 +54,7 @@ net.Receive("wa_create", function(len)
                 end
             end
         end)
-        Audios[id] = WAudio(id, url, owner)
+        Audios[id] = WebAudio(id, url, owner)
     else
         warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner, owner:SteamID64(), url)
     end
@@ -191,3 +189,6 @@ net.Receive("wa_change", function(len)
         updateObject(id, modify_enum, false, true)
     end
 end)
+
+local WA_STATIC_META = getmetatable(WebAudio)
+WA_STATIC_META.__call = createObject

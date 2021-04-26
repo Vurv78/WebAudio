@@ -31,7 +31,10 @@ Allows you to disable WebAudio for your server or for the client.
 Serverside convar that allows you to set WebAudio E2 access to only Admins or Only SuperAdmins. (0 for Everyone, 1 for Admins, 2 for SuperAdmins)
 
 ``wa_volume_max``  
-Serverside convar that allows you to set the maximum volume a WebAudio stream can play at.
+Serverside convar that allows you to set the maximum volume a WebAudio stream can play at. 200 is 200%, 50 is 50%, etc.
+
+``wa_stream_max``  
+Serverside convar that allows you to set the maximum volume a WebAudio streams a player can own at once.
 
 ## Functions
 
@@ -79,11 +82,8 @@ Destroys the WebAudio object, rendering it useless. It will silently fail when t
 ``number webaudio:update()``  
 Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
 
-``number webaudio:isDestroyed()``  
-Returns 1 or 0 for whether the webaudio object is destroyed or invalid.
-
 ``number webaudio:isValid()``  
-Opposite of webaudio:isDestroyed(), Returns 1 or 0 for whether the stream is valid and not destroyed.
+Returns 1 or 0 for whether the stream is valid and not destroyed.
 
 ``void webaudio:setParent(entity e)``  
 Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid. Does not update the object.

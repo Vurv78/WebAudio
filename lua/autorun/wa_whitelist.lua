@@ -5,6 +5,12 @@
 local function pattern(str) return { str, true } end
 local function simple(str) return { str, false } end
 
+WA_Circular_Include = true
+local Common = include("autorun/wa_common.lua")
+WA_Circular_Include = nil
+
+local warn, notify = Common.warn, Common.notify
+
 local registers = { ["pattern"] = pattern, ["simple"] = simple }
 
 -- Inspired / Taken from StarfallEx & Metastruct/gurl
@@ -17,6 +23,11 @@ local registers = { ["pattern"] = pattern, ["simple"] = simple }
 
 --- Note #2
 -- Create a file called webaudio_whitelist.txt in your data folder to overwrite this, works on the server box or on your client.
+-- Example file might look like this:
+-- ```
+-- pattern %w+%.sndcdn%.com
+-- simple translate.google.com
+-- ```
 local Whitelist = {
     -- Soundcloud
     pattern [[%w+%.sndcdn%.com]],
@@ -42,36 +53,49 @@ local Whitelist = {
     simple [[dl.dropbox.com]],
 }
 
-if file.Exists("webaudio_whitelist.txt", "DATA") then
-    local dat = file.Read("webaudio_whitelist.txt", "DATA")
-    local new_list, ind = {}, 0
-    for line in dat:gmatch("[^\n]+") do
-        local type, match = line:match("(%w+)%s+(.*)")
-        local reg = registers[type]
-        if reg then
-            new_list[ind] = registers[type](match)
-            ind = ind + 1
-        elseif type ~= nil then
-            -- Make sure type isn't nil so we ignore empty lines
-            warn("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
+local CustomWhitelist = false
+local function loadWhitelist(reloading)
+    if file.Exists("webaudio_whitelist.txt", "DATA") then
+        CustomWhitelist = true
+        local dat = file.Read("webaudio_whitelist.txt", "DATA")
+        local new_list, ind = {}, 1
+        for line in dat:gmatch("[^\r\n]+") do
+            local type, match = line:match("(%w+)%s+(.*)")
+            local reg = registers[type]
+            if reg then
+                new_list[ind] = reg(match)
+                ind = ind + 1
+            elseif type ~= nil then
+                -- Make sure type isn't nil so we ignore empty lines
+                warn("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
+            end
         end
+        notify("Whitelist from webaudio_whitelist.txt found and parsed with %d entries!", ind)
+        Whitelist = new_list
+    elseif reloading then
+        notify("Couldn't find your whitelist file! %s", CLIENT and "Make sure to run this on the server if you want to reload the server's whitelist!" or "")
     end
-    print("Whitelist from webaudio_whitelist.txt found and parsed with " .. ind .. " entries!")
-    Whitelist = new_list
 end
+loadWhitelist()
 
-local function isWhitelistedURL(url)
-    local relative = url:match("https?://(.*)")
+local function isWhitelistedURL(self, url)
+    if not isstring(url) then return false end
+    local relative = url:match("^https?://(.*)")
     if not relative then return false end
-    for k, v in ipairs(Whitelist) do
-        local haystack = v[2] and relative or (relative:match("(.-)/.*") or relative)
-        local res = haystack:find( string.format("^%s%s", v[1], is_pattern and "" or "$") )
+    for k, data in ipairs(Whitelist) do
+        local match, is_pattern = data[1], data[2]
+
+        local haystack = is_pattern and relative or (relative:match("(.-)/.*") or relative)
+        local res = haystack:find( string.format("^%s%s", match, is_pattern and "" or "$"), 1, not is_pattern )
         if res then return true end
     end
     return false
 end
 
+concommand.Add("wa_reload_whitelist", loadWhitelist)
+WebAudio.isWhitelistedURL = isWhitelistedURL -- Add static ``isWhitelistedURL`` function
+
 return {
-    isWhitelistedURL = isWhitelistedURL,
-    Whitelist = Whitelist
+    Whitelist = Whitelist,
+    CustomWhitelist
 }

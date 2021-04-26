@@ -1,17 +1,13 @@
 
 
 local Common = include("autorun/wa_common.lua")
-local Modify, isWhitelisted = Common.Modify, Common.isWhitelistedURL
+local Modify = Common.Modify
 
 util.AddNetworkString("wa_create")
 util.AddNetworkString("wa_change")
 
-_G.WebAudio = {} -- Interface to clientside Bass objects.
-WebAudio.__index = WebAudio
-
+-- Created in wa_common
 local WebAudio = WebAudio
-
-debug.getregistry()["WebAudio"] = WebAudio
 
 -- For now just increment ids, I think it'll be fine this way.
 local current_id = 1
@@ -121,10 +117,15 @@ function WebAudio:Destroy()
     return true
 end
 
---- Returns whether the WebAudio object is destroyed
--- @return boolean Whether it's destroyed
+--- Returns whether the WebAudio object is Null
+-- @return boolean Whether it's destroyed/null
 function WebAudio:IsDestroyed()
     return self.destroyed
+end
+
+--- Returns whether the WebAudio object is valid and not destroyed.
+function WebAudio:IsValid()
+    return not self.destroyed
 end
 
 --- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
@@ -199,7 +200,7 @@ end
 
 
 local function createInterface(_, url, owner)
-    assert( url and isstring(url) and isWhitelisted(url), "'url' argument must be given a whitelisted url string." )
+    assert( WebAudio:isWhitelistedURL(url), "'url' argument must be given a whitelisted url string." )
     -- assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." )
     -- Commenting this out in case someone wants a webaudio object to be owned by the world or something.
 
@@ -233,4 +234,5 @@ local function createInterface(_, url, owner)
     return self
 end
 
-setmetatable(WebAudio, { __call = createInterface })
+local WA_STATIC_META = getmetatable(WebAudio)
+WA_STATIC_META.__call = createInterface
