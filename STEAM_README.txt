@@ -55,6 +55,10 @@ This is a list of console variables that you can change to configure the addon t
 	[td]number webAudioCanCreate()[/td]
 	[td]Returns whether you can call the webAudio function without getting an error from the cooldown.
 [/td]
+[tr]
+	[td]number webAudioCanCreate(string url)[/td]
+	[td]Same as webAudioCanCreate(), but also checks if the url given is whitelisted so you don't error on webAudio calls.
+[/td]
 [/tr]
 [tr]
 	[td]number webAudioEnabled()[/td]

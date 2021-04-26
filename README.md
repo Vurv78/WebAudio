@@ -47,6 +47,9 @@ Returns how many WebAudios you can create.
 ``number webAudioCanCreate()``  
 Returns whether you can create a webaudio stream. Checks cooldown and whether you have a slot for another stream left.
 
+``number webAudioCanCreate(string url)``  
+Same as webAudioCanCreate(), but also checks if the url given is whitelisted so you don't error on webAudio calls.
+
 ``number webAudioEnabled()``  
 Returns whether webAudio is enabled for use on the server.
 
