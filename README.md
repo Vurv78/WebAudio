@@ -13,7 +13,7 @@ You can consider this as a safe and more robust replacement for the popular Stre
 ## Why use this over streamcore
 If you do not know already, Streamcore is a dangerous addon in several ways.  
 It allows for people to download anything to everyone's computers on the server.  
-And they can't disable it.
+~~And they can't disable it.~~ (Apparently there is a way, through streamcore_disabled, which literally had to be *suggested* to have the ability to disable forced HTTP requests. Yeah...)
 
 You can also abuse it to crash the server relatively easily.  
 
