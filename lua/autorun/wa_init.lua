@@ -2,10 +2,6 @@
 
 if WebAudio then return end -- Already initiated
 
-WA_Circular_Include = true
-local Common = include("autorun/wa_common.lua")
-WA_Circular_Include = nil
-
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
 
