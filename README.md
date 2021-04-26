@@ -36,13 +36,13 @@ Serverside convar that allows you to set the maximum volume a WebAudio stream ca
 ## Functions
 
 ``webaudio webAudio(string url)``  
-Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 150 ms cooldown between calls.
+Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!
 
 ``number webAudiosLeft()``  
 Returns how many WebAudios you can create.
 
 ``number webAudioCanCreate()``  
-Returns whether you can call the webAudio function without getting an error from the cooldown.
+Returns whether you can create a webaudio stream. Checks cooldown and whether you have a slot for another stream left.
 
 ``number webAudioEnabled()``  
 Returns whether webAudio is enabled for use on the server.
@@ -80,7 +80,10 @@ Destroys the WebAudio object, rendering it useless. It will silently fail when t
 Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
 
 ``number webaudio:isDestroyed()``  
-Returns 1 or 0 for whether the webaudio object is destroyed or not
+Returns 1 or 0 for whether the webaudio object is destroyed or invalid.
+
+``number webaudio:isValid()``  
+Opposite of webaudio:isDestroyed(), Returns 1 or 0 for whether the stream is valid and not destroyed.
 
 ``void webaudio:setParent(entity e)``  
 Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid. Does not update the object.

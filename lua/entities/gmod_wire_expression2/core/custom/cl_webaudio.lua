@@ -5,9 +5,9 @@ local function desc(name, description)
     tbl[name] = description
 end
 
-desc("webAudio(s)", "Creates and returns WebAudio type")
+desc("webAudio(s)", "Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!")
 desc("webAudiosLeft()", "Returns the number of WebAudio objects you can create in total for your player")
-desc("webAudioCanCreate()", "Returns whether you can create a WebAudio object. Only returns if the cooldown is done to create an object, use in conjunction with webAudiosLeft.")
+desc("webAudioCanCreate()", "Returns whether you can create a WebAudio object. Checks cooldown and whether you have another slot for a webaudio stream left.")
 
 -- Misc
 desc("nowebaudio()", "Returns an invalid webaudio object")
@@ -28,6 +28,7 @@ desc("destroy(xwa:)", "Destroys the WebAudio object, rendering it useless. It wi
 desc("update(xwa:)", "Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota")
 desc("isDestroyed(xwa:)", "Returns 1 or 0 for whether the webaudio object is destroyed or not")
 desc("isParented(xwa:)", "Returns 1 or 0 for whether the webaudio object is parented or not. Note that if the stream is parented, you cannot set it's position!")
+desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (If it is not destroyed & Not invalid from quota)")
 desc("setParent(xwa:e)", "Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid")
 desc("setParent(xwa:)", "Unparents the stream")
 

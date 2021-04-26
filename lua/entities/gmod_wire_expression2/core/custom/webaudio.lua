@@ -52,7 +52,7 @@ e2function number operator!=(webaudio lhs, webaudio rhs) -- if(Wa!=Wa)
 end
 
 e2function number operator_is(webaudio wa)
-    return co and 1 or 0
+    return wa and 1 or 0
 end
 
 local function checkPermissions(ply, ent)
@@ -91,14 +91,15 @@ e2function webaudio webAudio(string url)
     -- Creation Time Quota
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
-        error("You are creating webaudios too fast.")
+        error("You are creating webaudios too fast. Check webAudioCanCreate before calling!")
+        -- Maybe return an invalid object here? Might be confusing
     end
     CreationTimeTracker[owner] = now
 
     -- Stream Count Quota
     local count = StreamCounter[owner] or 0
     if count+1 > MaxStreams:GetInt() then
-        error("Reached maximum amount of WebAudio streams!")
+        error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
     end
     StreamCounter[owner] = count + 1
 
@@ -108,7 +109,9 @@ end
 __e2setcost(2)
 e2function number webAudioCanCreate()
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
-    return (now - last > 0.15)
+    if (now - last < 0.15) then return 0 end -- Creating too fast
+    if (StreamCounter[self.player] or 0) >= MaxStreams:GetInt() then return 0 end
+    return 1
 end
 
 e2function number webAudioEnabled()
@@ -194,7 +197,18 @@ end
 
 __e2setcost(3)
 e2function number webaudio:isDestroyed()
-    return (not this or this:IsDestroyed()) and 1 or 0
+    if this == nil then return 1 end
+    if not isWebAudio(this) then return 1 end
+    if this:IsDestroyed() then return 1 end
+    return 0
+end
+
+__e2setcost(4)
+e2function number webaudio:isValid()
+    if this == nil then return 0 end
+    if not isWebAudio(this) then return 0 end
+    if this:IsDestroyed() then return 0 end
+    return 1
 end
 
 __e2setcost(2)
