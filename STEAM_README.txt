@@ -20,19 +20,23 @@ This is a list of console variables that you can change to configure the addon t
 [/tr]
 [tr]
 	[td]wa_enable[/td]
-	[td]Allows you to disable WebAudio server-wide or clientside depending on whether it is executed in the client or server console [/td]
+	[td]Shared convar that allows you to disable WebAudio for the server or yourself depending on whether it is executed in the client or server console[/td]
 [/tr]
 [tr]
 	[td]wa_admin_only[/td]
-	[td]Serverside convar that allows you to set WebAudio E2 access to only Admins or Only Super Admins. (0 for Everyone, 1 for Admins, 2 for Super Admins). [/td]
+	[td]Serverside convar that allows you to set WebAudio E2 access to only Admins or Only Super Admins. (0 for Everyone, 1 for Admins, 2 for Super Admins).[/td]
 [/tr]
 [tr]
 	[td]wa_volume_max[/td]
-	[td]Serverside convar that allows you to set the maximum volume a WebAudio stream can play at. 100 is 100%, 50 is 50%, etc. Helps to prevent nasty earrape music being played too loudly [/td]
+	[td]
+		Serverside convar that allows you to set the maximum volume a WebAudio stream can play at.
+		100 is 100%, 50 is 50% and so on.
+		Helps to prevent nasty earrape music being played too loudly
+	[/td]
 [/tr]
 [tr]
 	[td]wa_stream_max[/td]
-	[td]Serverside convar that allows you to set the maximum volume a WebAudio streams a player can own at once. [/td]
+	[td]Serverside convar that allows you to set the max amount of streams a player can have at once[/td]
 [/tr]
 [/table]
 
@@ -53,12 +57,11 @@ This is a list of console variables that you can change to configure the addon t
 [/tr]
 [tr]
 	[td]number webAudioCanCreate()[/td]
-	[td]Returns whether you can call the webAudio function without getting an error from the cooldown.
-[/td]
+	[td]Returns whether you can call the webAudio function without getting an error from the cooldown.[/td]
+[/tr]
 [tr]
 	[td]number webAudioCanCreate(string url)[/td]
-	[td]Same as webAudioCanCreate(), but also checks if the url given is whitelisted so you don't error on webAudio calls.
-[/td]
+	[td]Overload of webAudioCanCreate(), that also checks if the url is whitelisted so you don't error on webAudio(s) calls[/td]
 [/tr]
 [tr]
 	[td]number webAudioEnabled()[/td]
@@ -66,7 +69,10 @@ This is a list of console variables that you can change to configure the addon t
 [/tr]
 [tr]
 	[td]number webAudioAdminOnly()[/td]
-	[td]Returns 0 if webAudio is available to everyone, 1 if only admins, 2 if only Super Admins. Basically replicates the value of the wa_admin_only convar[/td]
+	[td]
+		Returns 0 if webAudio is available to everyone, 1 if only admins, 2 if only Super Admins.
+		Basically replicates the value of the wa_admin_only convar
+	[/td]
 [/tr]
 [/table]
 
@@ -77,64 +83,104 @@ This is a list of console variables that you can change to configure the addon t
 [tr]
 	[th]Type name[/th]
 	[th]Description[/th]
+	[th]Updates the Object[/th]
 [/tr]
 [tr]
 	[td]void webaudio:setDirection(vector dir)[/td]
-	[td]Sets the direction in which the WebAudio stream is playing towards. Does not update the object.[/td]
+	[td] Sets the direction in which the WebAudio stream is playing towards. [/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:setPos(vector pos)[/td]
-	[td]Sets the 3D Position of the WebAudio stream without updating it. Does not update the object.[/td]
+	[td]
+		Sets the 3D Position of the WebAudio stream without updating it.
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:setVolume(number volume)[/td]
-	[td]Sets the volume of the WebAudio stream, in percent format. 200 is 2x as loud as normal, 100 is default. Will error if it is past wa_volume_max.[/td]
+	[td]
+		Sets the volume of the WebAudio stream, in percent format. 200 is 2x as loud as normal, 100 is default. Will error if it is past wa_volume_max.
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:setTime(number time)[/td]
-	[td]Sets the time in which the WebAudio stream should seek to in playing the URL. Does not update the object.[/td]
+	[td]
+		Sets the time in which the WebAudio stream should seek to in playing the URL.
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:setPlaybackRate(number rate)[/td]
-	[td]Sets the playback speed of a webaudio stream. 2 is twice as fast, 0.5 being half, etc. Does not update the object.[/td]
+	[td]
+		Sets the playback speed of a webaudio stream. 2 is twice as fast, 0.5 being half, etc.
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]number webaudio:pause()[/td]
-	[td]Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.
-[/td]
+	[td]
+		Pauses the stream where it is currently playing.
+		Returns 1 or 0 if could successfully do so, because of quota.
+	[/td]
+	[td] ✅ [/td]
 [/tr]
 [tr]
 	[td]number webaudio:play()[/td]
-	[td]Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.
-[/td]
+	[td]
+		Starts the stream or continues where it left off after pausing.
+		Returns 1 or 0 if could successfully do so, because of quota.
+	[/td]
+	[td] ✅ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:destroy()[/td]
-	[td]Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object. Use isValid to see if an object isn't destroyed[/td]
+	[td]
+		Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on!
+		This gives you another slot to make a WebAudio object. Use isValid to see if an object isn't destroyed
+	[/td]
+	[td] ✅ [/td]
 [/tr]
 [tr]
 	[td]number webaudio:update()[/td]
-	[td]Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running :play() or :pause() on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
-[/td]
+	[td]
+		Sends all of the information of the object given by functions like setPos and setTime to the client.
+		You need to call this after running functions without running :play() or :pause() on them since those do update the object.
+		Returns 1 if could update, 0 if hit transmission quota
+	[/td]
+	[td] ✅ [/td]
 [/tr]
 [tr]
 	[td]number webaudio:isValid()[/td]
 	[td]Returns 1 or 0 for whether the webaudio object is valid and not destroyed[/td]
+	[td] N/A [/td]
 [/tr]
 [tr]
 	[td]void webaudio:setParent(entity e)[/td]
-	[td]Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid. Does not update the object.
-If entity is left out, this unparents the stream from the currently parented entity. This will not update the object either.
-[/td]
+	[td]
+		[b]e[/b] is optional, If left blank, unparents the stream.
+
+		Parents the stream position to e, local to the entity.
+		If you've never set the position before, will be parented to the center of the prop.
+		Returns 1 if successfully parented or 0 if prop wasn't valid.
+
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
 	[td]void webaudio:parentTo(entity e)[/td]
-	[td]Alias of webaudio:setParent(entity e)[/td]
+	[td]
+		[b]Alias[/b] of webaudio:setParent(entity e)
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [tr]
-	[td]void webaudio:unparent()
-[/td]
-	[td]Alias of webaudio:setParent() when the entity field is left blank. Unparents the stream from the currently parented entity. Does not update the object.[/td]
+	[td]void webaudio:unparent()[/td]
+	[td]
+		[b]Alias[/b] of webaudio:setParent() when the entity field is left blank.
+	[/td]
+	[td] ❌ [/td]
 [/tr]
 [/table]
 
