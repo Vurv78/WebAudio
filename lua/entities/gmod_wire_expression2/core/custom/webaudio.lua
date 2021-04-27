@@ -223,7 +223,7 @@ end
 
 __e2setcost(2)
 e2function webaudio nowebaudio()
-    return WebAudio:getNull()
+    return WebAudio:getNULL()
 end
 
 __e2setcost(5)
