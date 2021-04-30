@@ -4,8 +4,8 @@ local Common = include("autorun/wa_common.lua")
 local warn, notify = Common.warn, Common.notify
 
 -- Convars
-local Enabled, AdminOnly = Common.WAEnabled, Common.WAAdminOnly, Common.WAMaxStreamsPerUser
-local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
+local Enabled = Common.WAEnabled
+local MaxRadius = Common.WAMaxRadius
 
 local WebAudios, WebAudioCounter = {}, 0
 local AwaitingChanges = {}
