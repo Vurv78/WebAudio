@@ -31,6 +31,7 @@ desc("isParented(xwa:)", "Returns 1 or 0 for whether the webaudio object is pare
 desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (If it is not destroyed & Not invalid from quota)")
 desc("setParent(xwa:e)", "Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid")
 desc("setParent(xwa:)", "Unparents the stream")
+desc("setRadius(xwa:n)", "Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500.")
 
 desc("unparent(xwa:)", "Alias of xwa:setParent(), Unparents the stream")
 desc("parentTo(xwa:e)", "Alias of xwa:setParent(), Parents the stream to entity e")
