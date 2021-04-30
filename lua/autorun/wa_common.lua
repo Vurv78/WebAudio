@@ -1,11 +1,16 @@
 
--- Convars below only effect WebAudios in expression2 chips since those are the only ones that are automatically gc'ed and managed by this addon.
-local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1) -- Both realms
+-- SERVER / REPLICATED Convars
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
-
--- TODO: Make volume possible to be configured by each client and not error the chip for sending at that volume. Would be annoying so ignoring for now.
-local WAMaxVolume = CreateConVar("wa_volume_max", "200", FCVAR_REPLICATED, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%", 0)
 local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1)
+
+-- SHARED Convars
+local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
+-- TODO: When we add selective targets maybe allow use of WebAudios at higher configs but only send it to clients that allow this.
+local WAMaxVolume = CreateConVar("wa_volume_max", "200", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0)
+local WAMaxRadius = CreateConVar("wa_radius_max", "1500", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
+
+-- Note that none of these convars affect the Lua Api on the SERVER. On the client they may however if they are aren't FCVAR_REPLICATED
+
 
 if not WebAudio and not WA_Circular_Include then
     include("autorun/wa_init.lua")
@@ -32,18 +37,30 @@ end
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
-    volume = 1,
-    time = 2,
-    pos = 4,
-    playing = 8,
-    playback_rate = 16,
-    direction = 32,
-    parented = 64,
+    volume = 2^0,
+    time = 2^1,
+    pos = 2^2,
+    playing = 2^3,
+    playback_rate = 2^4,
+    direction = 2^5,
+    parented = 2^6,
+    radius = 2^7,
 
-    destroyed = 128,
+    destroyed = 2^8,
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
+
+--- Debug function that's exported as well
+local function getFlags(number)
+    local out = {}
+    for enum_name, enum_val in pairs(Modify) do
+        if hasModifyFlag(number, enum_val) then
+            table.insert(out, enum_name)
+        end
+    end
+    return out
+end
 
 local WhitelistCommon = {}
 if not WA_Circular_Include then
@@ -64,10 +81,13 @@ return {
     -- Enums
     Modify = Modify,
     hasModifyFlag = hasModifyFlag,
+    getFlags = getFlags,
 
     -- Convars
     WAEnabled = WAEnabled,
     WAAdminOnly = WAAdminOnly,
+
     WAMaxVolume = WAMaxVolume,
-    WAMaxStreamsPerUser = WAMaxStreamsPerUser
+    WAMaxStreamsPerUser = WAMaxStreamsPerUser,
+    WAMaxRadius = WAMaxRadius
 }

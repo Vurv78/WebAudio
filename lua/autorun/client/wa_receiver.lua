@@ -2,59 +2,52 @@
 
 local Common = include("autorun/wa_common.lua")
 local warn, notify = Common.warn, Common.notify
-local Enabled = Common.WAEnabled
 
-local Audios, AwaitingChanges = {}, {}
+-- Convars
+local Enabled = Common.WAEnabled
+local MaxRadius = Common.WAMaxRadius
+
+local WebAudios, WebAudioCounter = {}, 0
+local AwaitingChanges = {}
 
 local updateObject -- To be declared below
 
-local function createObject(_, id, url, owner, bass)
-    local self = setmetatable({}, WebAudio)
-    -- Mutable
-    self.volume = 1
-    self.time = 0
-    self.pos = nil -- Start as nil for parenting to work.
-    self.playing = false
-    self.playback_rate = 1
-    self.modified = 0
-    self.destroyed = false
-    self.direction = Vector()
-    -- Mutable
+local WebAudio = WebAudio
 
-    self.id = id
-    self.url = url
-    self.owner = owner
-
-    -- Receiver Only
-    self.bass = bass
-    self.parent_pos = Vector()
-    -- Receiver Only
-
-    return self
+--- Creates a WebAudio receiver and returns it.
+-- @param number id ID of the serverside WebAudio object to receive from.
+-- @param string url URL to play from the stream
+-- @param Entity owner Owner of the stream for tracking purposes & future blocking/purging.
+local function registerStream(id, url, owner)
+    WebAudios[id] = WebAudio(id, url, owner)
+    WebAudioCounter = WebAudioCounter + 1
 end
 
 net.Receive("wa_create", function(len)
-    local id, url, flags, owner = net.ReadUInt(8), net.ReadString(), net.ReadString(), net.ReadEntity()
+    local id, url, owner = WebAudio:readID(), net.ReadString(), net.ReadEntity()
 
     if not Enabled:GetBool() then
+        -- Shouldn't happen anymore
         notify("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url)
         return
     end
 
     if WebAudio:isWhitelistedURL(url) then
         notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
-        sound.PlayURL(url, flags, function(bass, errid, errname)
+        sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
             if not errid then
-                Audios[id].bass = bass
+                WebAudios[id].bass = bass
 
                 local changes_awaiting = AwaitingChanges[id]
                 if changes_awaiting then
                     updateObject(id, changes_awaiting, true, false)
                     AwaitingChanges[id] = nil
                 end
+            else
+                warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
             end
         end)
-        Audios[id] = WebAudio(id, url, owner)
+        registerStream(id, url, owner)
     else
         warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner, owner:SteamID64(), url)
     end
@@ -64,21 +57,22 @@ local Modify = Common.Modify
 local hasModifyFlag = Common.hasModifyFlag
 
 --- Stores changes on the Receiver object
--- @param number id ID of the Receiver Object, to be used to search the table of 'Audios'
+-- @param number id ID of the Receiver Object, to be used to search the table of 'WebAudios'
 -- @param number modify_enum Mixed bitwise enum that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
 -- @param boolean handle_bass Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
 -- @param boolean inside_net Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
 function updateObject(id, modify_enum, handle_bass, inside_net)
     -- Object destroyed
-    local self = Audios[id]
+    local self = WebAudios[id]
     local bass = self.bass
 
+    -- Keep in mind that the order of these needs to sync with wa_interface's reading order.
     if hasModifyFlag(modify_enum, Modify.destroyed) then
         self.destroyed = true
         if handle_bass then
             timer.Remove("wa_parent_" .. self.id) -- Parent timer
             bass:Stop()
-            Audios[ self.id ] = nil
+            WebAudios[ self.id ] = nil
             self = nil
         end
         return
@@ -90,7 +84,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         if handle_bass then bass:SetVolume(self.volume) end
     end
 
-    -- Time changed
+    -- Playback time changed
     if hasModifyFlag(modify_enum, Modify.time) then
         if inside_net then self.time = net.ReadUInt(16) end
         if handle_bass then
@@ -106,6 +100,14 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         end
     end
 
+    -- Direction changed.
+    if hasModifyFlag(modify_enum, Modify.direction) then
+        if inside_net then self.direction = net.ReadVector() end
+        if handle_bass then
+            bass:SetPos(self.pos, self.direction)
+        end
+    end
+
     -- Playback rate changed
     if hasModifyFlag(modify_enum, Modify.playback_rate) then
         if inside_net then self.playback_rate = net.ReadFloat() end
@@ -114,29 +116,15 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         end
     end
 
-    -- Direction changed.
-    if hasModifyFlag(modify_enum, Modify.direction) then
-        if inside_net then self.direction = net.ReadVector() end
-        -- Should always be true so..
+    -- Radius changed
+    if hasModifyFlag(modify_enum, Modify.radius) then
+        if inside_net then self.radius = math.min(net.ReadUInt(16), MaxRadius:GetInt()) end
         if handle_bass then
-            bass:SetPos(self.pos, self.direction)
+            bass:Set3DFadeDistance(self.radius, 1000000000)
         end
     end
 
-    -- Playing / Paused state changed
-    if hasModifyFlag(modify_enum, Modify.playing) then
-        if inside_net then self.playing = net.ReadBool() end
-        -- Should always be true so..
-        if handle_bass then
-            if self.playing then
-                -- If changed to be playing, play. Else stop
-                bass:Play()
-            else
-                bass:Pause()
-            end
-        end
-    end
-
+    -- Was parented or unparented
     if hasModifyFlag(modify_enum, Modify.parented) then
         if inside_net then
             self.parented = net.ReadBool()
@@ -171,14 +159,28 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
             end)
         end
     end
+
+    -- Playing / Paused state changed. Should always be at the bottom here
+    if hasModifyFlag(modify_enum, Modify.playing) then
+        if inside_net then self.playing = net.ReadBool() end
+        -- Should always be true so..
+        if handle_bass then
+            if self.playing then
+                -- If changed to be playing, play. Else pause
+                bass:Play()
+            else
+                bass:Pause()
+            end
+        end
+    end
 end
 
 net.Receive("wa_change", function(len)
-    local id, modify_enum = net.ReadUInt(8), net.ReadUInt(8)
-    local obj = Audios[id]
+    local id, modify_enum = WebAudio:readID(), WebAudio:readModify()
+    local obj = WebAudios[id]
 
     if AwaitingChanges[id] then return end
-    if not obj then return end -- Hm..
+    if not obj then return end -- Object was destroyed on the client for whatever reason. Most likely reason is wa_purge
 
     if obj.bass then
         -- Store and handle changes
@@ -190,5 +192,96 @@ net.Receive("wa_change", function(len)
     end
 end)
 
+--- Destroys a stream and stops the underlying IGmodAudioChannel
+-- @param number id ID of the stream to destroy
+local function destroyStream(id)
+    local stream = WebAudios[id]
+    if stream then
+        local bass = stream.bass
+        if bass and bass:IsValid() then
+            bass:Stop()
+        end
+        WebAudios[id] = nil
+    end
+end
+
+--- Stops every currently existing stream
+-- @param boolean write_ids Whether to net write IDs or not while looping through the streams. Used for wa_ignore.
+local function stopStreams(write_ids)
+    for id, stream in pairs(WebAudios) do
+        if stream then
+            destroyStream(id)
+            if write_ids then
+                -- If we are in wa_purge
+                WebAudio:writeID(id)
+            end
+            WebAudios[id] = nil
+        end
+    end
+end
+
+concommand.Add("wa_purge", function()
+    if WebAudioCounter == 0 then return end
+    net.Start("wa_ignore", true)
+        net.WriteUInt(WebAudioCounter, 8)
+        stopStreams(true)
+    net.SendToServer()
+end, nil, "Purges all of the currently playing WebAudio streams")
+
+--- When the client toggles wa_enable send this info to the server to stop sending net messages to them.
+cvars.AddChangeCallback("wa_enable", function(convar, old, new)
+    local enabled = new ~= "0"
+    if not enabled then
+        stopStreams(false)
+    end
+    net.Start("wa_enable", true)
+        net.WriteBool(enabled) -- Tell the server we're
+    net.SendToServer()
+end)
+
+local function createObject(_, id, url, owner, bass)
+    local self = setmetatable({}, WebAudio)
+    -- Mutable
+    self.playing = false
+    self.destroyed = false
+
+    self.parented = false
+    self.parent = nil -- Entity
+
+    self.modified = 0
+
+    self.playback_rate = 1
+    self.volume = 1
+    self.time = 0
+    self.radius = math.min(200, MaxRadius:GetInt()) -- 200 by default or client's max radius if it's lower
+
+    self.pos = Vector()
+    self.direction = Vector()
+    -- Mutable
+
+    self.id = id
+    self.url = url
+    self.owner = owner
+
+    -- Receiver Only
+    self.bass = bass
+    self.parent_pos = Vector() -- Local position to parent when it was initially parented.
+    -- Receiver Only
+
+    return self
+end
+
 local WA_STATIC_META = getmetatable(WebAudio)
 WA_STATIC_META.__call = createObject
+
+--- Returns the list of all WebAudio receivers.
+-- @return table WebAudios
+function WA_STATIC_META:getList()
+    return WebAudios
+end
+
+--- Returns a WebAudio receiver struct from an id if there is one with that id.
+-- @return WebAudio Struct
+function WA_STATIC_META:getFromID(id)
+    return WebAudios[id]
+end

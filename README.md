@@ -25,21 +25,33 @@ You will also need to make sure you fix all linting errors.
 
 ## Convars
 ``wa_enable``  
-Allows you to disable WebAudio for your server or for the client.
+**SHARED** Convar that allows you to disable WebAudio for yourself or for the server. If set to 0, also purges any running streams.
 
 ``wa_admin_only``  
-Serverside convar that allows you to set WebAudio E2 access to only Admins or Only SuperAdmins. (0 for Everyone, 1 for Admins, 2 for SuperAdmins)
-
-``wa_volume_max``  
-Serverside convar that allows you to set the maximum volume a WebAudio stream can play at. 200 is 200%, 50 is 50%, etc.
+**SERVER** Convar that allows you to set WebAudio E2 access to only Admins or Only SuperAdmins. (0 for Everyone, 1 for Admins, 2 for SuperAdmins)
 
 ``wa_stream_max``  
-Serverside convar that allows you to set the maximum volume a WebAudio streams a player can own at once.
+**SERVER** convar that allows you to set the maximum volume a WebAudio streams a player can own at once.
+
+``wa_volume_max``  
+**SHARED** Convar that allows you to set the maximum volume a WebAudio stream can play at. 200 is 200%, 50 is 50%, etc. Can set it for yourself to clamp any future streams to.
+
+``wa_radius_max``  
+**SHARED** Convar that allows you to set the maximum distance a stream can be heard from. Works on your client.
+
+## Concommands
+
+``wa_purge``
+**CLIENT** Concommand that purges all currently running streams and makes sure you don't get any useless net messages from them.
+
+``wa_reload_whitelist``
+**SHARED** Concommand that tries to reload your whitelist at ``data/webaudio_whitelist.txt``
 
 ## Functions
 
 ``webaudio webAudio(string url)``  
-Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!
+Returns a **WebAudio** object of that URL as long as it is whitelisted by the server.  
+Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check ``webAudioCanCreate`` before calling this!
 
 ``number webAudiosLeft()``  
 Returns how many WebAudios you can create.
@@ -48,7 +60,7 @@ Returns how many WebAudios you can create.
 Returns whether you can create a webaudio stream. Checks cooldown and whether you have a slot for another stream left.
 
 ``number webAudioCanCreate(string url)``  
-Same as webAudioCanCreate(), but also checks if the url given is whitelisted so you don't error on webAudio calls.
+Same as ``webAudioCanCreate()``, but also checks if the url given is whitelisted so you don't error on webAudio calls.
 
 ``number webAudioEnabled()``  
 Returns whether webAudio is enabled for use on the server.
@@ -99,3 +111,7 @@ Alias of webaudio:setParent(e) Parents the stream position to e, local to the en
 
 ``void webaudio:unparent()``  
 Alias of webaudio:setParent(), Unparents the stream from the currently parented entity. Does not update the object.
+
+``void webaudio:setRadius(number radius)``  
+Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500. Does not update the object.
+

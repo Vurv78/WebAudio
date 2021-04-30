@@ -15,28 +15,59 @@ This is a list of console variables that you can change to configure the addon t
 
 [table]
 [tr]
-	[th]Variable Name[/th]
+	[th]ConVar Name[/th]
 	[th]Description[/th]
+	[th]Realm[/th]
 [/tr]
 [tr]
 	[td]wa_enable[/td]
 	[td]Shared convar that allows you to disable WebAudio for the server or yourself depending on whether it is executed in the client or server console[/td]
+	[td]SHARED[/td]
 [/tr]
 [tr]
 	[td]wa_admin_only[/td]
-	[td]Serverside convar that allows you to set WebAudio E2 access to only Admins or Only Super Admins. (0 for Everyone, 1 for Admins, 2 for Super Admins).[/td]
+	[td]Allows you to set WebAudio E2 access to only Admins or Only Super Admins. (0 for Everyone, 1 for Admins, 2 for Super Admins).[/td]
+	[td]SERVER[/td]
 [/tr]
 [tr]
 	[td]wa_volume_max[/td]
 	[td]
-		Serverside convar that allows you to set the maximum volume a WebAudio stream can play at.
+		Shared convar that allows you to set the maximum volume a WebAudio stream can play at.
 		100 is 100%, 50 is 50% and so on.
 		Helps to prevent nasty earrape music being played too loudly
 	[/td]
+	[td]SHARED[/td]
 [/tr]
 [tr]
 	[td]wa_stream_max[/td]
 	[td]Serverside convar that allows you to set the max amount of streams a player can have at once[/td]
+	[td]SERVER[/td]
+[/tr]
+[tr]
+	[td]wa_radius_max[/td]
+	[td]Allows you to set the maximum distance a stream can be heard from. Works on your client.[/td]
+	[td]SHARED[/td]
+[/tr]
+[/table]
+
+[h2]Console Commands[/h2]
+This is a list of Concommands to use with this addon as a server owner and a user.
+
+[table]
+[tr]
+	[th]ConCommand Name[/th]
+	[th]Description[/th]
+	[th]Realm[/th]
+[/tr]
+[tr]
+	[td]wa_purge[/td]
+	[td]Purges all currently running streams and makes sure you don't get any useless net messages from them.[/td]
+	[td]CLIENT[/td]
+[/tr]
+[tr]
+	[td]wa_reload_whitelist[/td]
+	[td]Reloads your whitelist at data/webaudio_whitelist.txt[/td]
+	[td]SHARED[/td]
 [/tr]
 [/table]
 
@@ -179,6 +210,17 @@ This is a list of console variables that you can change to configure the addon t
 	[td]void webaudio:unparent()[/td]
 	[td]
 		[b]Alias[/b] of webaudio:setParent() when the entity field is left blank.
+	[/td]
+	[td] ❌ [/td]
+[/tr]
+[tr]
+	[td]void webaudio:setRadius(number radius)[/td]
+	[td]
+		Sets the radius in which to the stream will be heard in.
+		Default is 200 and (default) max is 1500.
+
+		This isn't perfect, people can still play somewhat loud sounds and go past the radius!
+		If this is the case, use the convar [b]wa_radius_max[/b] to change it for your client.
 	[/td]
 	[td] ❌ [/td]
 [/tr]
