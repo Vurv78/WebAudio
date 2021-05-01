@@ -25,9 +25,8 @@ timer.Create("wa_think", 200 / 1000, 0, function()
         local bass = stream.bass
         if bass then
             -- Handle Parenting
-            local parent = stream.parent
+            local parent, parent_pos = stream.parent, stream.parent_pos
             if parent and parent ~= NULL then
-                local parent, parent_pos = stream.parent, stream.parent_pos
                 local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
                 bass:SetPos( position )
                 stream.pos = position
@@ -174,11 +173,11 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         end
 
         if handle_bass and self.parented then
-            local parent = self.parent
+            local parent, parent_pos = self.parent, self.parent_pos
             if parent and parent ~= NULL then
-                local parent, parent_pos = self.parent, self.parent_pos
                 local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
                 bass:SetPos( position )
+                self.pos = position
             end
         end
     end
