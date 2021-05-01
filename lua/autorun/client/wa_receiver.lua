@@ -3,9 +3,11 @@
 local Common = include("autorun/wa_common.lua")
 local warn, notify = Common.warn, Common.notify
 
+local math_min = math.min
+
 -- Convars
 local Enabled = Common.WAEnabled
-local MaxRadius = Common.WAMaxRadius
+local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
 
 local WebAudios, WebAudioCounter = {}, 0
 local AwaitingChanges = {}
@@ -13,6 +15,26 @@ local AwaitingChanges = {}
 local updateObject -- To be declared below
 
 local WebAudio = WebAudio
+
+timer.Create("wa_think", 200/1000, 0, function()
+    local player_pos = LocalPlayer():GetPos()
+    for id, stream in pairs(WebAudios) do
+        local bass = stream.bass
+        if bass then
+            -- Handle Parenting
+            local parent = stream.parent
+            if parent and parent ~= NULL then
+                local pos = parent:LocalToWorld(stream.parent_pos)
+                bass:SetPos( pos )
+                stream.pos = pos
+            end
+
+            -- Manually handle volume as you go farther from the stream.
+            local dist_to_stream = player_pos:Distance( stream.pos )
+            bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream/stream.radius, 1) ) )
+        end
+    end
+end)
 
 --- Creates a WebAudio receiver and returns it.
 -- @param number id ID of the serverside WebAudio object to receive from.
@@ -70,7 +92,6 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
     if hasModifyFlag(modify_enum, Modify.destroyed) then
         self.destroyed = true
         if handle_bass then
-            timer.Remove("wa_parent_" .. self.id) -- Parent timer
             bass:Stop()
             WebAudios[ self.id ] = nil
             self = nil
@@ -80,7 +101,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 
     -- Volume changed
     if hasModifyFlag(modify_enum, Modify.volume) then
-        if inside_net then self.volume = net.ReadFloat() end
+        if inside_net then self.volume = math_min(net.ReadFloat(), MaxVolume:GetInt()/100) end
         if handle_bass then bass:SetVolume(self.volume) end
     end
 
@@ -118,9 +139,10 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 
     -- Radius changed
     if hasModifyFlag(modify_enum, Modify.radius) then
-        if inside_net then self.radius = math.min(net.ReadUInt(16), MaxRadius:GetInt()) end
+        if inside_net then self.radius = math_min(net.ReadUInt(16), MaxRadius:GetInt()) end
         if handle_bass then
-            bass:Set3DFadeDistance(self.radius, 1000000000)
+            local dist_to_stream = LocalPlayer():GetPos():Distance( self.pos )
+            bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream/self.radius, 1) ) )
         end
     end
 
@@ -139,7 +161,6 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
                     self.parent_pos = Vector()
                 end
             else
-                timer.Remove("wa_parent_" .. self.id)
                 self.parent = nil
             end
         end
@@ -149,14 +170,6 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
             if parent and parent ~= NULL then
                 bass:SetPos( self.parent:LocalToWorld(self.parent_pos) )
             end
-            timer.Create("wa_parent_" .. self.id, 0.1, 0, function()
-                if parent ~= NULL then
-                    bass:SetPos( parent:LocalToWorld(self.parent_pos) )
-                elseif self.id then
-                    -- If the prop was removed but the stream hasn't been destroyed, remove the timer here.
-                    timer.Remove("wa_parent_" .. self.id)
-                end
-            end)
         end
     end
 
@@ -253,7 +266,7 @@ local function createObject(_, id, url, owner, bass)
     self.playback_rate = 1
     self.volume = 1
     self.time = 0
-    self.radius = math.min(200, MaxRadius:GetInt()) -- 200 by default or client's max radius if it's lower
+    self.radius = math_min(200, MaxRadius:GetInt()) -- 200 by default or client's max radius if it's lower
 
     self.pos = Vector()
     self.direction = Vector()
