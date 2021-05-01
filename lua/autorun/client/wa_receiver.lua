@@ -16,7 +16,7 @@ local updateObject -- To be declared below
 
 local WebAudio = WebAudio
 
-timer.Create("wa_think", 200/1000, 0, function()
+timer.Create("wa_think", 200 / 1000, 0, function()
     local player_pos = LocalPlayer():GetPos()
     for id, stream in pairs(WebAudios) do
         local bass = stream.bass
@@ -31,7 +31,7 @@ timer.Create("wa_think", 200/1000, 0, function()
 
             -- Manually handle volume as you go farther from the stream.
             local dist_to_stream = player_pos:Distance( stream.pos )
-            bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream/stream.radius, 1) ) )
+            bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream / stream.radius, 1) ) )
         end
     end
 end)
@@ -101,7 +101,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 
     -- Volume changed
     if hasModifyFlag(modify_enum, Modify.volume) then
-        if inside_net then self.volume = math_min(net.ReadFloat(), MaxVolume:GetInt()/100) end
+        if inside_net then self.volume = math_min(net.ReadFloat(), MaxVolume:GetInt() / 100) end
         if handle_bass then bass:SetVolume(self.volume) end
     end
 
