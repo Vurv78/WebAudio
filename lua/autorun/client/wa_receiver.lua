@@ -17,7 +17,10 @@ local updateObject -- To be declared below
 local WebAudio = WebAudio
 
 timer.Create("wa_think", 200 / 1000, 0, function()
-    local player_pos = LocalPlayer():GetPos()
+    local LocalPlayer = LocalPlayer()
+    if not LocalPlayer or LocalPlayer == NULL then return end
+
+    local player_pos = LocalPlayer:GetPos()
     for id, stream in pairs(WebAudios) do
         local bass = stream.bass
         if bass then
@@ -102,7 +105,9 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
     -- Volume changed
     if hasModifyFlag(modify_enum, Modify.volume) then
         if inside_net then self.volume = math_min(net.ReadFloat(), MaxVolume:GetInt() / 100) end
-        if handle_bass then bass:SetVolume(self.volume) end
+        if handle_bass then
+            bass:SetVolume(self.volume)
+        end
     end
 
     -- Playback time changed
@@ -268,7 +273,7 @@ local function createObject(_, id, url, owner, bass)
     self.time = 0
     self.radius = math_min(200, MaxRadius:GetInt()) -- 200 by default or client's max radius if it's lower
 
-    self.pos = Vector()
+    self.pos = nil -- Needs to be nil to know whether to set to the parent's position with setParent.
     self.direction = Vector()
     -- Mutable
 
