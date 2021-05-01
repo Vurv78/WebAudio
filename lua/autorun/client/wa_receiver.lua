@@ -27,9 +27,10 @@ timer.Create("wa_think", 200 / 1000, 0, function()
             -- Handle Parenting
             local parent = stream.parent
             if parent and parent ~= NULL then
-                local pos = parent:LocalToWorld(stream.parent_pos)
-                bass:SetPos( pos )
-                stream.pos = pos
+                local parent, parent_pos = stream.parent, stream.parent_pos
+                local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
+                bass:SetPos( position )
+                stream.pos = position
             end
 
             -- Manually handle volume as you go farther from the stream.
@@ -165,7 +166,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
                     self.parent_pos = ent:WorldToLocal(self.pos)
                 else
                     -- self.pos hasn't been touched, play the sound at the entity's position.
-                    self.parent_pos = Vector()
+                    self.parent_pos = nil
                 end
             else
                 self.parent = nil
@@ -175,7 +176,9 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         if handle_bass and self.parented then
             local parent = self.parent
             if parent and parent ~= NULL then
-                bass:SetPos( self.parent:LocalToWorld(self.parent_pos) )
+                local parent, parent_pos = self.parent, self.parent_pos
+                local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
+                bass:SetPos( position )
             end
         end
     end
