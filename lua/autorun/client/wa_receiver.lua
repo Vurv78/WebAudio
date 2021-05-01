@@ -142,7 +142,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
         if inside_net then self.radius = math_min(net.ReadUInt(16), MaxRadius:GetInt()) end
         if handle_bass then
             local dist_to_stream = LocalPlayer():GetPos():Distance( self.pos )
-            bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream/self.radius, 1) ) )
+            bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream / self.radius, 1) ) )
         end
     end
 
