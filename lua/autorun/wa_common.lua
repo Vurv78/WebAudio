@@ -6,8 +6,8 @@ local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED,
 -- SHARED Convars
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
 -- TODO: When we add selective targets maybe allow use of WebAudios at higher configs but only send it to clients that allow this.
-local WAMaxVolume = CreateConVar("wa_volume_max", "200", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0)
-local WAMaxRadius = CreateConVar("wa_radius_max", "1500", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
+local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0)
+local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
 
 -- Note that none of these convars affect the Lua Api on the SERVER. On the client they may however if they are aren't FCVAR_REPLICATED
 
