@@ -33,8 +33,10 @@ timer.Create("wa_think", 200 / 1000, 0, function()
             end
 
             -- Manually handle volume as you go farther from the stream.
-            local dist_to_stream = player_pos:Distance( stream.pos )
-            bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream / stream.radius, 1) ) )
+            if stream.pos then
+                local dist_to_stream = player_pos:Distance( stream.pos )
+                bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream / stream.radius, 1) ) )
+            end
         end
     end
 end)
@@ -145,7 +147,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
     -- Radius changed
     if hasModifyFlag(modify_enum, Modify.radius) then
         if inside_net then self.radius = math_min(net.ReadUInt(16), MaxRadius:GetInt()) end
-        if handle_bass then
+        if handle_bass and self.pos then
             local dist_to_stream = LocalPlayer():GetPos():Distance( self.pos )
             bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream / self.radius, 1) ) )
         end
