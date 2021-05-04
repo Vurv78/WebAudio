@@ -5,6 +5,8 @@ It also adds an extension for Expression2 to interact with these in a safe manne
 You can consider this as a safe and more robust replacement for the popular Streamcore addon, and I advise you to replace it for the safety of your server and it's population.
 ``Documentation`` can be found at the bottom of this file
 
+To convert your Streamcore contraptions to *WebAudio*, see [from Streamcore to WebAudio](https://github.com/Vurv78/WebAudio/wiki/From-StreamCore-To-WebAudio)
+
 ## Features
 * Client and Serverside Whitelists, both are customizable with simple patterns or more advanced lua patterns.  
 * The ``WebAudio`` type in Expression2 that adds the ability to manipulate sounds in 3D space to change it's volume, position and time in the song dynamically.   
