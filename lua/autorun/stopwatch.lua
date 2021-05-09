@@ -27,7 +27,9 @@ function Initialize(_, duration, fn)
 
     local mangled = string.format("stopwatch_%p", self)
     timer.Create(mangled, duration, 1, function()
-        self:Stop()
+        self.playback_elapsed = self.playback_duration
+        self.state = STOPWATCH_STOPPED
+        -- :Stop() but we know we already reached the end of the timer.
         fn(self)
     end)
     timer.Stop(mangled)
@@ -113,7 +115,8 @@ end
 function StopWatch:SetRate(n)
     self:UpdateTime()
     self.playback_rate = n
-    timer.Adjust(self.timerid, (self.playback_duration - timer_now()) / n )
+    local new_duration = (self.playback_duration / n)
+    timer.Adjust(self.timerid, new_duration - self.playback_elapsed )
     return self
 end
 
