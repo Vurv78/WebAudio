@@ -11,7 +11,6 @@ local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farth
 
 -- Note that none of these convars affect the Lua Api on the SERVER. On the client they may however if they are aren't FCVAR_REPLICATED
 
-
 if not WebAudio and not WA_Circular_Include then
     include("autorun/wa_init.lua")
 end
@@ -33,7 +32,7 @@ local function notify(...)
     MsgC(Black, "[", Color_Notify, "WA", Black, "]", White, ": ", msg, "\n")
 end
 
--- Modification Enum.
+-- Modification Flags
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
@@ -69,7 +68,7 @@ if not WA_Circular_Include then
 end
 
 return {
-    -- Whitelist re-exports
+    -- Re-exports
     Whitelist = WhitelistCommon.Whitelist,
     CustomWhitelist = WhitelistCommon.CustomWhitelist,
 
@@ -80,6 +79,8 @@ return {
 
     -- Enums
     Modify = Modify,
+    Channel = Channel,
+
     hasModifyFlag = hasModifyFlag,
     getFlags = getFlags,
 

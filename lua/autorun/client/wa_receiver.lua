@@ -9,7 +9,11 @@ local math_min = math.min
 local Enabled = Common.WAEnabled
 local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
 
-local WebAudios, WebAudioCounter = {}, 0
+-- TODO: See why this can't have weak keys/values
+local WebAudios = {}
+
+local WebAudioCounter =  0
+
 local AwaitingChanges = {}
 
 local updateObject -- To be declared below
@@ -70,6 +74,16 @@ net.Receive("wa_create", function(len)
                     updateObject(id, changes_awaiting, true, false)
                     AwaitingChanges[id] = nil
                 end
+
+
+                if owner == LocalPlayer() then
+                    -- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
+                    net.Start("wa_info", true)
+                        WebAudio:writeID(id)
+                        net.WriteUInt(bass:GetLength(), 16)
+                        net.WriteString(bass:GetFileName())
+                    net.SendToServer()
+                end
             else
                 warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
             end
@@ -85,7 +99,7 @@ local hasModifyFlag = Common.hasModifyFlag
 
 --- Stores changes on the Receiver object
 -- @param number id ID of the Receiver Object, to be used to search the table of 'WebAudios'
--- @param number modify_enum Mixed bitwise enum that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
+-- @param number modify_enum Mixed bitwise flag that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
 -- @param boolean handle_bass Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
 -- @param boolean inside_net Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
 function updateObject(id, modify_enum, handle_bass, inside_net)

@@ -72,6 +72,8 @@ Returns 0 if webAudio is available to everyone, 1 if only admins, 2 if only supe
 
 ### WebAudio Type Methods
 
+## Setters
+
 ``void webaudio:setDirection(vector dir)``  
 Sets the direction in which the WebAudio stream is playing towards. Does not update the object.
 
@@ -86,21 +88,6 @@ Sets the time in which the WebAudio stream should seek to in playing the URL. Do
 
 ``void webaudio:setPlaybackRate(number rate)``  
 Sets the playback speed of a webaudio stream. 2 is twice as fast, 0.5 being half, etc. Does not update the object.
-
-``number webaudio:pause()``  
-Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.
-
-``number webaudio:play()``  
-Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.
-
-``void webaudio:destroy()``  
-Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object
-
-``number webaudio:update()``  
-Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
-
-``number webaudio:isValid()``  
-Returns 1 or 0 for whether the stream is valid and not destroyed.
 
 ``void webaudio:setParent(entity e)``  
 Parents the stream position to e, local to the entity. If you've never set the position before, will be parented to the center of the prop. Returns 1 if successfully parented or 0 if prop wasn't valid. Does not update the object.
@@ -117,3 +104,45 @@ Alias of webaudio:setParent(), Unparents the stream from the currently parented 
 ``void webaudio:setRadius(number radius)``  
 Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500. Does not update the object.
 
+## Special
+
+``number webaudio:pause()``  
+Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.
+
+``number webaudio:play()``  
+Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.
+
+``void webaudio:destroy()``  
+Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object
+
+``number webaudio:update()``  
+Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota
+
+## Getters
+
+``number webaudio:isValid()``  
+Returns 1 or 0 for whether the stream is valid and not destroyed.
+
+``number webaudio:isParented()``  
+Returns 1 or 0 for whether the stream is parented
+
+``vector webaudio:getPos()``  
+Returns the position of the stream set by setPos. Doesn't work with parented streams since they do that math on the client.
+
+``vector webaudio:getVolume()``  
+Returns the volume of the stream set by setVolume
+
+``number webaudio:getRadius()``  
+Returns the radius of the stream set by setRadius
+
+``number webaudio:getTime()``  
+Returns the current playback time of the stream in seconds.
+
+``number webaudio:getState()``  
+Returns the state of the stream, 0 = STOPPED, 1 = PLAYING, 2 = PAUSED, Use the _CHANNEL* constants to get these values easily. (_CHANNEL_STOPPED is 0 for example)
+
+``number webaudio:getLength()``  
+Returns the playback duration / length of the stream. Returns -1 if we haven't received the length yet.
+
+``string webaudio:getFileName()``  
+Returns the file name of the webaudio stream. Usually but not always returns the URL of the stream, and will return "" if we haven't received the filename yet.

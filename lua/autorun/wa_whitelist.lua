@@ -3,7 +3,7 @@
 
 -- Match, IsPattern
 local function pattern(str) return { str, true } end
-local function simple(str) return { str, false } end
+local function simple(str) return { string.PatternSafe(str), false } end
 
 WA_Circular_Include = true
 local Common = include("autorun/wa_common.lua")
@@ -30,9 +30,11 @@ local registers = { ["pattern"] = pattern, ["simple"] = simple }
 -- ```
 local Whitelist = {
     -- Soundcloud
-    pattern [[%w+%.sndcdn%.com]],
+    pattern [[%w+%.sndcdn%.com/.+]],
 
     -- Google Translate Api
+    -- http://translate.google.com/translate_tts?tl=en&q=bruh
+    -- Needs an api key
     simple [[translate.google.com]],
 
     -- Discord
@@ -86,8 +88,9 @@ local function isWhitelistedURL(self, url)
         local match, is_pattern = data[1], data[2]
 
         local haystack = is_pattern and relative or (relative:match("(.-)/.*") or relative)
-        local res = haystack:find( string.format("^%s%s", match, is_pattern and "" or "$"), 1, not is_pattern )
-        if res then return true end
+        if haystack:find( string.format("^%s%s", match, is_pattern and "" or "$"), 1 ) then
+            return true
+        end
     end
     return false
 end

@@ -7,10 +7,13 @@ util.AddNetworkString("wa_create") -- To send to the client to create a Clientsi
 util.AddNetworkString("wa_change") -- To send to the client to modify Client WebAudio structs
 util.AddNetworkString("wa_ignore") -- To receive from the client to make sure to ignore players to send to in WebAudio transmissions
 util.AddNetworkString("wa_enable") -- To receive from the client to make sure people with wa_enable 0 don't get WebAudio transmissions
+util.AddNetworkString("wa_info") -- To receive information about BASS / IGmodAudioChannel streams from clients that create them.
 
 -- Created in wa_common
 local WebAudio = WebAudio
-local WebAudios = {}
+local WebAudios = setmetatable({}, {
+    __mode = "kv"
+})
 
 -- TODO: Make this table + hash table version cancer an object or just do this another way. I'm not sure how to do it.
 -- I would use a CRecipientFilter but I also need to add the people with wa_enable to 0 rather than just the people who used wa_purge to kill certain objects.
@@ -55,6 +58,9 @@ function WebAudio:SetTime(time)
     if self:IsDestroyed() then return end
     if isnumber(time) then
         self.time = time
+
+        self.stopwatch:SetTime(time)
+
         self:AddModify(Modify.time)
     end
 end
@@ -90,6 +96,7 @@ function WebAudio:Play()
     self:AddModify(Modify.playing)
     self.playing = true
     self:Transmit()
+
     return true
 end
 
@@ -100,6 +107,7 @@ function WebAudio:Pause()
     self:AddModify(Modify.playing)
     self.playing = false
     self:Transmit()
+
     return true
 end
 
@@ -109,6 +117,8 @@ end
 function WebAudio:SetPlaybackRate(rate)
     if self:IsDestroyed() then return end
     if isnumber(rate) then
+        self.stopwatch:SetRate(rate)
+
         self.playback_rate = rate
         self:AddModify(Modify.playback_rate)
         return true
@@ -148,6 +158,7 @@ function WebAudio:IsDestroyed()
 end
 
 --- Returns whether the WebAudio object is valid and not destroyed.
+-- @return boolean If it's Valid
 function WebAudio:IsValid()
     return not self.destroyed
 end
@@ -172,6 +183,12 @@ function WebAudio:SetParent(ent)
     end
     self:AddModify(Modify.parented)
     return true
+end
+
+--- Returns the position of the WebAudio object.
+-- @return vector? Position of the stream or nil if not set.
+function WebAudio:GetPos()
+    return self.pos
 end
 
 local hasModifyFlag = Common.hasModifyFlag
@@ -246,7 +263,47 @@ function WebAudio:Broadcast()
     net.SendOmit( table.Add(self.ignored:GetPlayers(), StreamDisabledPlayers.__net) )
 end
 
+--- Returns time elapsed in URL stream.
+-- Time elapsed is calculated on the server using playback rate and playback time.
+-- Not perfect for the clients and there will be desync if you pause and unpause constantly.
+-- @return number Elapsed time
+function WebAudio:GetTimeElapsed()
+    return self.stopwatch:GetTime()
+end
 
+--- Client paired getters
+
+--- Returns the playtime length of a WebAudio object.
+-- @return number Playtime Length
+function WebAudio:GetLength()
+    return self.i_length
+end
+
+--- Returns the file name of the WebAudio object. Not necessarily always the URL.
+-- @return string File name
+function WebAudio:GetFileName()
+    return self.i_filename
+end
+
+--- Returns the state of the WebAudio object
+-- @return number State, See STOPWATCH_* Enums
+function WebAudio:GetState()
+    return self.stopwatch:GetState()
+end
+
+--- Returns the volume of the object set by SetVolume
+-- @return number Volume from 0-1
+function WebAudio:GetVolume()
+    return self.volume
+end
+
+--- Returns the radius of the stream set by SetRadius
+-- @return number Radius
+function WebAudio:GetRadius()
+    return self.radius
+end
+
+--- This is what is called when you run WebAudio(...)
 local function createInterface(_, url, owner)
     assert( WebAudio:isWhitelistedURL(url), "'url' argument must be given a whitelisted url string." )
     -- assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." )
@@ -272,13 +329,29 @@ local function createInterface(_, url, owner)
     self.direction = Vector()
     -- Mutable
 
+
     self.id = getID()
     self.url = url
     self.owner = owner
+    self.timers = {}
 
     -- Interface Only
     self.ignored = RecipientFilter()
+
+    self.stopwatch = StopWatch(100, function(watch)
+        self:Pause()
+        print("Stopped stream")
+    end)
+
+    self.needs_info = true -- Whether this stream still needs information from the client.
     -- Interface Only
+
+    -- Info from client
+    self.i_length = -1
+    self.i_filename = ""
+    -- Info from client
+
+    WebAudios[self.id] = self
 
     net.Start("wa_create", true)
         WebAudio:writeID(self.id)
@@ -286,9 +359,11 @@ local function createInterface(_, url, owner)
         net.WriteEntity(self.owner)
     -- Send to everyone besides people who have wa_enabled set to 0 and people who have purged / killed this stream.
     self:Broadcast()
+
     return self
 end
 
+--- Stop sending net messages to players who want to ignore certain streams.
 net.Receive("wa_ignore", function(len, ply)
     if WebAudio:SubscriptionStatus(ply) == false then return end -- They already have wa_enable set to 0
     local n_ignores = net.ReadUInt(8)
@@ -297,6 +372,30 @@ net.Receive("wa_ignore", function(len, ply)
         if stream then
             stream:Unsubscribe(ply)
         end -- Doesn't exist anymore, maybe got removed when the net message was sending
+    end
+end)
+
+--- This receives net messages when the SERVER wants information about a webaudio stream you created.
+-- It gets stuff like average bitrate and length of the song this way.
+-- You'll only be affecting your own streams and chip, so there's no point in "abusing" this.
+net.Receive("wa_info", function(len, ply)
+    local id = WebAudio:readID()
+    local stream = WebAudios[id]
+    if stream and stream.needs_info and stream.owner == ply then
+        -- Make sure the stream exists, hasn't already received client info & That the net message sender is the owner of the WebAudio object.
+        local length = net.ReadUInt(16)
+        local file_name = net.ReadString()
+        stream.i_length = length
+        stream.i_filename = file_name
+        stream.needs_info = false
+
+        print("Adding stopwatch to stream", stream)
+
+        local watch = stream.stopwatch
+        watch:SetDuration(length)
+        watch:SetRate(stream.playback_rate)
+        watch:SetTime(stream.time)
+        watch:Start()
     end
 end)
 
