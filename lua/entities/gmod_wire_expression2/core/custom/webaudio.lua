@@ -13,6 +13,11 @@ local StreamCounter = WireLib.RegisterPlayerTable() -- Prevent having more strea
 local CreationTimeTracker = WireLib.RegisterPlayerTable() -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
 local LastTransmissions = WireLib.RegisterPlayerTable() -- In order to prevent too many updates at once.
 
+E2Lib.registerConstant( "CHANNEL_STOPPED", STOPWATCH_STOPPED )
+E2Lib.registerConstant( "CHANNEL_PLAYING", STOPWATCH_PLAYING )
+E2Lib.registerConstant( "CHANNEL_PAUSED", STOPWATCH_PAUSED )
+
+
 registerType("webaudio", "xwa", nil,
     nil,
     nil,
@@ -244,6 +249,29 @@ __e2setcost(2)
 e2function number webaudio:isParented()
     return this:IsParented() and 1 or 0
 end
+
+e2function void webaudio:getPos()
+    return this:GetPos()
+end
+
+__e2setcost(4)
+
+e2function number webaudio:getTime()
+    return this:GetTimeElapsed()
+end
+
+e2function number webaudio:getLength()
+    return this:GetLength()
+end
+
+e2function string webaudio:getFileName()
+    return this:GetFileName()
+end
+
+e2function number webaudio:getState()
+    return this:GetState()
+end
+
 
 registerCallback("construct", function(self)
     self.webaudio_streams = {}
