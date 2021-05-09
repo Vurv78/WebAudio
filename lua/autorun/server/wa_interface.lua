@@ -409,10 +409,12 @@ net.Receive("wa_enable", function(len, ply)
 end)
 
 hook.Add("PlayerDisconnected", "wa_player_cleanup", function(ply)
+    if ply:IsBot() then return end
     table.RemoveByValue(StreamDisabledPlayers, ply)
 end)
 
 hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
+    if ply:IsBot() then return end
     local wa_enabled = ply:GetInfoNum("wa_enable", 1)
     if wa_enabled == 0 then
         WebAudio:Unsubscribe(ply)
