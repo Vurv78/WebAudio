@@ -38,7 +38,9 @@ desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (
 desc("isParented(xwa:)", "Returns 1 or 0 for whether the webaudio object is parented or not. Note that if the stream is parented, you cannot set it's position!")
 
 --- Getters
-desc("getPos(xwa:)", "Returns the current position of the WebAudio object. This does not change with parenting.")
+desc("getPos(xwa:)", "Returns the current position of the WebAudio object. This does not work with parenting.")
+desc("getVolume(xwa:)", "Returns the volume of the WebAudio object set by setVolume")
+desc("getRadius(xwa:)", "Returns the radius of the WebAudio object set by setRadius")
 
 -- Replicated Clientside behavior on server
 desc("getTime(xwa:)", "Returns the playback time of the stream in seconds.")

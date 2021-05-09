@@ -291,6 +291,18 @@ function WebAudio:GetState()
     return self.stopwatch:GetState()
 end
 
+--- Returns the volume of the object set by SetVolume
+-- @return number Volume from 0-1
+function WebAudio:GetVolume()
+    return self.volume
+end
+
+--- Returns the radius of the stream set by SetRadius
+-- @return number Radius
+function WebAudio:GetRadius()
+    return self.radius
+end
+
 --- This is what is called when you run WebAudio(...)
 local function createInterface(_, url, owner)
     assert( WebAudio:isWhitelistedURL(url), "'url' argument must be given a whitelisted url string." )

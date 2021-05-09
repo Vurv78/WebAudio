@@ -272,6 +272,13 @@ e2function number webaudio:getState()
     return this:GetState()
 end
 
+e2function number webaudio:getVolume()
+    return this:GetVolume()
+end
+
+e2function number webaudio:getRadius()
+    return this:GetRadius()
+end
 
 registerCallback("construct", function(self)
     self.webaudio_streams = {}
