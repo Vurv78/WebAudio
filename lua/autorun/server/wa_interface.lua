@@ -3,8 +3,6 @@
 local Common = include("autorun/wa_common.lua")
 local Modify = Common.Modify
 
-local CHANNEL_STOPPED, CHANNEL_PLAYING, CHANNEL_PAUSED = Common.Channel.Stopped, Common.Channel.Playing, Common.Channel.Paused
-
 util.AddNetworkString("wa_create") -- To send to the client to create a Clientside WebAudio struct
 util.AddNetworkString("wa_change") -- To send to the client to modify Client WebAudio structs
 util.AddNetworkString("wa_ignore") -- To receive from the client to make sure to ignore players to send to in WebAudio transmissions
@@ -99,7 +97,6 @@ function WebAudio:Play()
     self.playing = true
     self:Transmit()
 
-    self.state = CHANNEL_PLAYING
     return true
 end
 

@@ -48,13 +48,6 @@ local Modify = {
     destroyed = 2^8,
 }
 
--- Channel Enum. GMOD_CHANNEL Enum isn't SHARED so we need to recreate it :p
-local Channel = {
-    Stopped = 0,
-    Playing = 1,
-    Paused = 2
-}
-
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
 
 --- Debug function that's exported as well
