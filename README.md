@@ -27,28 +27,18 @@ Pull request anything you want, just make sure you're ready to change things to 
 You will also need to make sure you fix all linting errors.
 
 ## Convars
-``wa_enable``  
-**SHARED** Convar that allows you to disable WebAudio for yourself or for the server. If set to 0, also purges any running streams.
-
-``wa_admin_only``  
-**SERVER** Convar that allows you to set WebAudio E2 access to only Admins or Only SuperAdmins. (0 for Everyone, 1 for Admins, 2 for SuperAdmins)
-
-``wa_stream_max``  
-**SERVER** convar that allows you to set the maximum volume a WebAudio streams a player can own at once.
-
-``wa_volume_max``  
-**SHARED** Convar that allows you to set the maximum volume a WebAudio stream can play at. 200 is 200%, 50 is 50%, etc. Can set it for yourself to clamp any future streams to.
-
-``wa_radius_max``  
-**SHARED** Convar that allows you to set the maximum distance a stream can be heard from. Works on your client.
-
+| Realm  | Name          | Default Value | Description                                                                                                                |
+|--------|---------------|---------------|----------------------------------------------------------------------------------------------------------------------------|
+| SHARED | wa_enable     | 1             | Whether WebAudio is enabled for you or the whole server. If you set this to 0, it will purge all currently running streams |
+| SERVER | wa_admin_only | 0             | Restrict E2 WebAudio access to admins. 0 is everyone, 1 is >=admin, 2 is super admins only.                                |
+| SERVER | wa_stream_max | 5             | Max number of E2 WebAudio streams a player can have                                                                        |
+| SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
+| SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
 ## Concommands
-
-``wa_purge``
-**CLIENT** Concommand that purges all currently running streams and makes sure you don't get any useless net messages from them.
-
-``wa_reload_whitelist``
-**SHARED** Concommand that tries to reload your whitelist at ``data/webaudio_whitelist.txt``
+| Realm  | Name                | Description                                                                                                    |
+|--------|---------------------|----------------------------------------------------------------------------------------------------------------|
+| CLIENT | wa_purge            | Purges all currently running WebAudio streams and does not receive any further net updates with their objects. |
+| SHARED | wa_reload_whitelist | Refreshes your whitelist located at data/webaudio_whitelist.txt                                                |
 
 ## Functions
 
