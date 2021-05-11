@@ -340,7 +340,6 @@ local function createInterface(_, url, owner)
 
     self.stopwatch = StopWatch(100, function(watch)
         self:Pause()
-        print("Stopped stream")
     end)
 
     self.needs_info = true -- Whether this stream still needs information from the client.
@@ -388,8 +387,6 @@ net.Receive("wa_info", function(len, ply)
         stream.i_length = length
         stream.i_filename = file_name
         stream.needs_info = false
-
-        print("Adding stopwatch to stream", stream)
 
         local watch = stream.stopwatch
         watch:SetDuration(length)
