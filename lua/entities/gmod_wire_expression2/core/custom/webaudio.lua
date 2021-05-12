@@ -288,8 +288,10 @@ registerCallback("destruct", function(self)
     local owner, streams = self.player, self.data.webaudio_streams
     local count = StreamCounter[owner]
     for k, stream in ipairs(streams) do
-        count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
-        stream:Destroy()
+        if stream:IsValid() then
+            count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
+            stream:Destroy()
+        end
         streams[k] = nil
     end
     StreamCounter[owner] = count or 0
