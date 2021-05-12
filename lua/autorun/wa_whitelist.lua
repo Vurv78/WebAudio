@@ -53,6 +53,25 @@ local Whitelist = {
     pattern [[%w+%.dl%.dropboxusercontent%.com/(.+)]],
     simple [[www.dropbox.com]],
     simple [[dl.dropbox.com]],
+
+    -- Github
+    simple [[raw.githubusercontent.com]],
+    simple [[gist.githubusercontent.com]],
+    simple [[raw.github.com]],
+    simple [[cloud.githubusercontent.com]],
+    simple [[user-images.githubusercontent.com]],
+    pattern [[avatars(%d*)%.githubusercontent%.com/(.+)]],
+
+    -- Steam
+    simple [[images.akamai.steamusercontent.com]],
+    simple [[steamuserimages-a.akamaihd.net]],
+    simple [[steamcdn-a.akamaihd.net]],
+
+    -- Gitlab
+    simple [[gitlab.com]],
+
+    -- Onedrive
+    simple [[onedrive.live.com/redir]]
 }
 
 local CustomWhitelist = false
