@@ -225,7 +225,7 @@ end
 
 __e2setcost(4)
 e2function number webaudio:isValid()
-    return this:IsValid() and 1 or 0
+    return IsValid(this) and 1 or 0
 end
 
 __e2setcost(2)
