@@ -11,20 +11,27 @@ To convert your Streamcore contraptions to *WebAudio*, see [from Streamcore to W
 ## Features
 * Client and Serverside Whitelists, both are customizable with simple patterns or more advanced lua patterns.  
 * The ``WebAudio`` type in Expression2 that adds the ability to manipulate sounds in 3D space to change it's volume, position and time in the song dynamically.   
-* Easy to use lua api that tries to mirror the IGModAudioChannel type.
+* Easy to use serverside lua api that tries to mirror the IGModAudioChannel type.
 
 ## Why use this over streamcore
-If you do not know already, Streamcore is a dangerous addon in several ways.  
-It allows for people to download anything to everyone's computers on the server.  
-~~And they can't disable it.~~ (Apparently there is a way, through streamcore_disabled, which literally had to be *suggested* to have the ability to disable forced HTTP requests. Yeah...)
+If you do not know already, Streamcore is a dangerous addon in several ways.
+* Allows for ANYONE to download ANYTHING to everyone on the server's computers.
+* Allows for people to crash / lag everyone easily.
+* ~~Doesn't allow you to disable it.~~ (There is apparently a way to disable streamcore through ``streamcore_disabled``. It was added ~4 years after the addon was created only after people kept bugging the creator that maybe it isn't a good idea to allow people to download ANYTHING to your computer with no shut off switch.)
 
-You can also abuse it to crash the server relatively easily.  
-
-WebAudio aims to easily solve these issues by having efficient safe code as well as the customizable whitelist (alongside a standard default whitelist that is flexible and doesn't permit malicious activity)
+WebAudio aims to easily solve these issues by:
+* Having proper net limits
+* Using a customizable whitelist for both your server & it's clients.
+* Containing a flexible but safe default whitelist that only allows for large or trusted domains as to not allow for malicious requests.
 
 ## Contributing
-Pull request anything you want, just make sure you're ready to change things to make sure the code will remain efficient and along the same style as the rest of the codebase.  
-You will also need to make sure you fix all linting errors.
+Make an issue if you want something added & Pull requests are always open.
+Please note this when making a PR:
+* Be ready to fix all linting errors (Don't use garry's stupid C operators, use the lua ones, properly indent and remove trailing whitespace)
+* It may not be accepted depending on whether:
+  1. The code isn't efficient
+  2. I would rather implement it myself
+  3. It has a controversial or breaking change
 
 ## Convars
 | Realm  | Name          | Default Value | Description                                                                                                                |
