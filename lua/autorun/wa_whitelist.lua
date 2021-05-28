@@ -71,7 +71,11 @@ local Whitelist = {
     simple [[gitlab.com]],
 
     -- Onedrive
-    simple [[onedrive.live.com/redir]]
+    simple [[onedrive.live.com/redir]],
+
+    -- ytdl host. Not particularly trusted as much as the others.
+    -- TODO: Remove for wire maybe?
+    simple [[youtubedl.mattjeanes.com]]
 }
 
 local CustomWhitelist = false
