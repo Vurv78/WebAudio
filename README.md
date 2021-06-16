@@ -1,4 +1,5 @@
-# WebAudio [![Release Shield](https://img.shields.io/github/v/release/Vurv78/WebAudio)](https://github.com/Vurv78/VExtensions/releases/latest) [![License](https://img.shields.io/github/license/Vurv78/WebAudio?color=red)](https://opensource.org/licenses/MIT) [![Linter Badge](https://github.com/Vurv78/WebAudio/workflows/Linter/badge.svg)](https://github.com/Vurv78/WebAudio/actions) [![github/Vurv78](https://discordapp.com/api/guilds/824727565948157963/widget.png)](https://discord.gg/epJFC6cNsw)
+# WebAudio [![Release Shield](https://img.shields.io/github/v/release/Vurv78/WebAudio)](https://github.com/Vurv78/WebAudio/releases/latest) [![License](https://img.shields.io/github/license/Vurv78/WebAudio?color=red)](https://opensource.org/licenses/MIT) [![Linter Badge](https://github.com/Vurv78/WebAudio/workflows/Linter/badge.svg)](https://github.com/Vurv78/WebAudio/actions) [![github/Vurv78](https://img.shields.io/discord/824727565948157963?color=7289DA&label=chat&logo=discord)](https://discord.gg/epJFC6cNsw) [![Workshop Subscribers](https://img.shields.io/steam/subscriptions/2466875474?color=yellow&logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=2466875474)
+
 
 This is an addon for garrysmod that adds a serverside ``WebAudio`` class which can be used to interact with clientside IGmodAudioChannels asynchronously.  
 It also adds an extension for Expression2 to interact with these in a safe manner.  
@@ -9,45 +10,42 @@ To convert your Streamcore contraptions to *WebAudio*, see [from Streamcore to W
 
 ## Features
 * Client and Serverside Whitelists, both are customizable with simple patterns or more advanced lua patterns.  
-* The ``WebAudio`` type in Expression2 that adds the ability to manipulate sounds in 3D space to change it's volume, position and time in the song dynamically.   
-* Easy to use lua api that tries to mirror the IGModAudioChannel type.
+* The ``WebAudio`` class and api for that allows for interfacing with IGModAudioChannels from the server, changing the volume, position and time of the audio streams dynamically.  
+  * Comes with an Expression2 type that binds to the WebAudio lua class.  
 
 ## Why use this over streamcore
-If you do not know already, Streamcore is a dangerous addon in several ways.  
-It allows for people to download anything to everyone's computers on the server.  
-~~And they can't disable it.~~ (Apparently there is a way, through streamcore_disabled, which literally had to be *suggested* to have the ability to disable forced HTTP requests. Yeah...)
+If you do not know already, Streamcore is a dangerous addon in several ways.
+* Allows for ANYONE to download ANYTHING to everyone on the server's computers.
+* Allows for people to crash / lag everyone easily.
+* ~~Doesn't allow you to disable it.~~ (There is apparently a way to disable streamcore through ``streamcore_disabled``. It was added ~4 years after the addon was created only after people kept bugging the creator that maybe it isn't a good idea to allow people to download ANYTHING to your computer with no shut off switch.)
 
-You can also abuse it to crash the server relatively easily.  
-
-WebAudio aims to easily solve these issues by having efficient safe code as well as the customizable whitelist (alongside a standard default whitelist that is flexible and doesn't permit malicious activity)
+WebAudio aims to easily solve these issues by:
+* Having proper net limits
+* Using a customizable whitelist for both your server & it's clients.
+* Containing a flexible but safe default whitelist that only allows for large or trusted domains as to not allow for malicious requests.
 
 ## Contributing
-Pull request anything you want, just make sure you're ready to change things to make sure the code will remain efficient and along the same style as the rest of the codebase.  
-You will also need to make sure you fix all linting errors.
+Make an issue if you want something added & Pull requests are always open.
+Please note this when making a PR:
+* Be ready to fix all linting errors (Don't use garry's stupid C operators, use the lua ones, properly indent and remove trailing whitespace)
+* It may not be accepted depending on whether:
+  1. The code isn't efficient
+  2. I would rather implement it myself
+  3. It has a controversial or breaking change
 
 ## Convars
-``wa_enable``  
-**SHARED** Convar that allows you to disable WebAudio for yourself or for the server. If set to 0, also purges any running streams.
-
-``wa_admin_only``  
-**SERVER** Convar that allows you to set WebAudio E2 access to only Admins or Only SuperAdmins. (0 for Everyone, 1 for Admins, 2 for SuperAdmins)
-
-``wa_stream_max``  
-**SERVER** convar that allows you to set the maximum volume a WebAudio streams a player can own at once.
-
-``wa_volume_max``  
-**SHARED** Convar that allows you to set the maximum volume a WebAudio stream can play at. 200 is 200%, 50 is 50%, etc. Can set it for yourself to clamp any future streams to.
-
-``wa_radius_max``  
-**SHARED** Convar that allows you to set the maximum distance a stream can be heard from. Works on your client.
-
+| Realm  | Name          | Default Value | Description                                                                                                                |
+|--------|---------------|---------------|----------------------------------------------------------------------------------------------------------------------------|
+| SHARED | wa_enable     | 1             | Whether WebAudio is enabled for you or the whole server. If you set this to 0, it will purge all currently running streams |
+| SERVER | wa_admin_only | 0             | Restrict E2 WebAudio access to admins. 0 is everyone, 1 is >=admin, 2 is super admins only.                                |
+| SERVER | wa_stream_max | 5             | Max number of E2 WebAudio streams a player can have                                                                        |
+| SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
+| SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
 ## Concommands
-
-``wa_purge``
-**CLIENT** Concommand that purges all currently running streams and makes sure you don't get any useless net messages from them.
-
-``wa_reload_whitelist``
-**SHARED** Concommand that tries to reload your whitelist at ``data/webaudio_whitelist.txt``
+| Realm  | Name                | Description                                                                                                    |
+|--------|---------------------|----------------------------------------------------------------------------------------------------------------|
+| CLIENT | wa_purge            | Purges all currently running WebAudio streams and does not receive any further net updates with their objects. |
+| SHARED | wa_reload_whitelist | Refreshes your whitelist located at data/webaudio_whitelist.txt                                                |
 
 ## Functions
 
