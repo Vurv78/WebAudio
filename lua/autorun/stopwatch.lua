@@ -16,7 +16,7 @@ local timer_now = RealTime
 --- Creates a StopWatch.
 -- @param number duration How long the stopwatch will last
 -- @param function callback What to run when the stopwatch finishes.
-function Initialize(_, duration, fn)
+local function Initialize(_, duration, fn)
     local self = setmetatable({}, StopWatch)
     self.playback_rate = 1
     self.playback_now = timer_now()

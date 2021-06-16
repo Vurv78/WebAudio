@@ -3,7 +3,7 @@
 
 E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web streaming to E2.")
 
-local Common = include("autorun/wa_common.lua")
+local Common = WebAudio.Common
 
 -- Convars
 local Enabled, AdminOnly = Common.WAEnabled, Common.WAAdminOnly, Common.WAMaxStreamsPerUser
@@ -18,8 +18,8 @@ E2Lib.registerConstant( "CHANNEL_PLAYING", STOPWATCH_PLAYING )
 E2Lib.registerConstant( "CHANNEL_PAUSED", STOPWATCH_PAUSED )
 
 
-registerType("webaudio", "xwa", nil,
-    nil,
+registerType("webaudio", "xwa", WebAudio:getNULL(),
+    nil, -- TODO: webaudios in io?
     nil,
     function(ret)
         -- For some reason we don't throw an error here.
@@ -103,16 +103,16 @@ e2function webaudio webAudio(string url)
     -- Creation Time Quota
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
-        -- error("You are creating webaudios too fast. Check webAudioCanCreate before calling!")
-        return WebAudio:getNULL()
+        error("You are creating WebAudios too fast. Check webAudioCanCreate before calling!")
+        --return WebAudio:getNULL()
     end
     CreationTimeTracker[owner] = now
 
     -- Stream Count Quota
     local count = StreamCounter[owner] or 0
-    if count+1 > MaxStreams:GetInt() then
-        -- error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
-        return WebAudio:getNULL()
+    if count + 1 > MaxStreams:GetInt() then
+        error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
+        --return WebAudio:getNULL()
     end
     StreamCounter[owner] = count + 1
 
@@ -136,6 +136,7 @@ e2function number webAudioCanCreate(string url)
     return 1
 end
 
+__e2setcost(1)
 e2function number webAudioEnabled()
     return Enabled:GetInt()
 end
@@ -167,16 +168,14 @@ e2function number webaudio:play()
     checkPermissions(self)
     if not canTransmit(self.player) then return 0 end
 
-    this:Play()
-    return 1
+    return this:Play() and 1 or 0
 end
 
 e2function number webaudio:pause()
     checkPermissions(self)
     if not canTransmit(self.player) then return 0 end
 
-    this:Pause()
-    return 1
+    return this:Pause() and 1 or 0
 end
 
 __e2setcost(5)
@@ -219,8 +218,7 @@ e2function number webaudio:update()
     checkPermissions(self)
     if not canTransmit(self.player) then return 0 end
 
-    this:Transmit()
-    return 1
+    return this:Transmit() and 1 or 0
 end
 
 __e2setcost(4)
@@ -250,8 +248,8 @@ e2function number webaudio:isParented()
     return this:IsParented() and 1 or 0
 end
 
-e2function void webaudio:getPos()
-    return this:GetPos()
+e2function vector webaudio:getPos()
+    return this:GetPos() or Vector(0, 0, 0)
 end
 
 __e2setcost(4)
