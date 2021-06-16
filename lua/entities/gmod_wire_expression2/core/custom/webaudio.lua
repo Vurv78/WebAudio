@@ -35,7 +35,7 @@ registerType("webaudio", "xwa", nil,
 
 local function registerStream(self, url, owner)
     local stream = WebAudio(url, owner)
-    table.insert(self.webaudio_streams, stream)
+    table.insert(self.data.webaudio_streams, stream)
     return stream
 end
 
@@ -225,7 +225,7 @@ end
 
 __e2setcost(4)
 e2function number webaudio:isValid()
-    return this:IsValid() and 1 or 0
+    return IsValid(this) and 1 or 0
 end
 
 __e2setcost(2)
@@ -281,17 +281,18 @@ e2function number webaudio:getRadius()
 end
 
 registerCallback("construct", function(self)
-    self.webaudio_streams = {}
+    self.data.webaudio_streams = {}
 end)
 
 registerCallback("destruct", function(self)
-    local owner = self.player
+    local owner, streams = self.player, self.data.webaudio_streams
     local count = StreamCounter[owner]
-    for _, stream in next, self.webaudio_streams do
-        count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
-        stream:Destroy()
-        stream = nil
+    for k, stream in ipairs(streams) do
+        if stream:IsValid() then
+            count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
+            stream:Destroy()
+        end
+        streams[k] = nil
     end
     StreamCounter[owner] = count or 0
-    self.webaudio_streams = nil
 end)

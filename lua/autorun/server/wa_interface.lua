@@ -340,7 +340,6 @@ local function createInterface(_, url, owner)
 
     self.stopwatch = StopWatch(100, function(watch)
         self:Pause()
-        print("Stopped stream")
     end)
 
     self.needs_info = true -- Whether this stream still needs information from the client.
@@ -389,8 +388,6 @@ net.Receive("wa_info", function(len, ply)
         stream.i_filename = file_name
         stream.needs_info = false
 
-        print("Adding stopwatch to stream", stream)
-
         local watch = stream.stopwatch
         watch:SetDuration(length)
         watch:SetRate(stream.playback_rate)
@@ -409,10 +406,12 @@ net.Receive("wa_enable", function(len, ply)
 end)
 
 hook.Add("PlayerDisconnected", "wa_player_cleanup", function(ply)
+    if ply:IsBot() then return end
     table.RemoveByValue(StreamDisabledPlayers, ply)
 end)
 
 hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
+    if ply:IsBot() then return end
     local wa_enabled = ply:GetInfoNum("wa_enable", 1)
     if wa_enabled == 0 then
         WebAudio:Unsubscribe(ply)
