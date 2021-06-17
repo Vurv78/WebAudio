@@ -187,8 +187,8 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		end
 	end
 
-	if hasModifyFlag(modify_enum, Modify.fft_enabled) then
-		if inside_net then self.fft_enabled = net.ReadBool() end
+	if hasModifyFlag(modify_enum, Modify.fft_enabled) and inside_net then
+		self.fft_enabled = net.ReadBool()
 	end
 
 	-- Was parented or unparented
