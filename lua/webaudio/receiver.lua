@@ -3,7 +3,7 @@
 local Common = WebAudio.Common
 local warn, notify = Common.warn, Common.notify
 
-local math_min = math.min
+local math_min, math_floor = math.min, math.floor
 
 -- Convars
 local Enabled = Common.WAEnabled
@@ -12,7 +12,7 @@ local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
 local AwaitingChanges = {}
 local updateObject -- To be declared below
 
-timer.Create("wa_think", 200 / 1000, 0, function()
+timer.Create("wa_think", 100 / 1000, 0, function()
 	local LocalPlayer = LocalPlayer()
 	if not LocalPlayer or LocalPlayer == NULL then return end
 
@@ -33,6 +33,27 @@ timer.Create("wa_think", 200 / 1000, 0, function()
 			if stream.pos then
 				local dist_to_stream = player_pos:Distance( stream.pos )
 				bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream / stream.radius, 1) ) )
+			end
+
+			if
+				stream.fft_enabled and
+				LocalPlayer == stream.owner and
+				stream.bass:GetState() == GMOD_CHANNEL_PLAYING
+			then
+				local t = {}
+				local filled = math_min( bass:FFT(t, FFT_256), 128 )
+				local samp_len = WebAudio.FFTSAMP_LEN
+				net.Start("wa_fft", true)
+					WebAudio:writeID(stream.id)
+					for k = 2, filled, 2 do
+						-- Multiply the small decimal to a number we will floor and write as a UInt.
+						-- If the number is smaller, it will be more precise for higher numbers.
+						-- If it's larger, it will be more precise for smaller number fft magnitudes.
+						local v = math_floor(t[k] * 1e5)
+						if v == 0 then break end -- Assume the rest of the data is 0.
+						net.WriteUInt(v, samp_len)
+					end
+				net.SendToServer()
 			end
 		end
 	end
@@ -164,6 +185,10 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		if handle_bass then
 			bass:EnableLooping(self.looping)
 		end
+	end
+
+	if hasModifyFlag(modify_enum, Modify.fft_enabled) then
+		if inside_net then self.fft_enabled = net.ReadBool() end
 	end
 
 	-- Was parented or unparented

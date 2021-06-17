@@ -150,3 +150,9 @@ Returns the file name of the webaudio stream. Usually but not always returns the
 
 ``number webaudio:getLooping()``  
 Returns if the stream is looping, set by setLooping
+
+``number webaudio:getFFTEnabled()``  
+Returns if FFT is enabled for this stream.
+
+``array webaudio:getFFT()``  
+Returns an array of FFT values that has a length max of 64. Some may be empty to conserve space but are equivalent to 0.

@@ -219,6 +219,11 @@ e2function void webaudio:setLooping(number loop)
     this:SetLooping( loop ~= 0 )
 end
 
+e2function void webaudio:setFFTEnabled(number enabled)
+    checkPermissions(self)
+    this:SetFFTEnabled( enabled ~= 0 )
+end
+
 __e2setcost(15)
 e2function void webaudio:destroy()
     if this:Destroy() then
@@ -285,6 +290,14 @@ end
 
 e2function number webaudio:getLooping()
     return this:GetLooping() and 1 or 0
+end
+
+e2function number webaudio:getFFTEnabled()
+    return this:GetFFTEnabled() and 1 or 0
+end
+
+e2function array webaudio:getFFT()
+    return this:GetFFT()
 end
 
 registerCallback("construct", function(self)

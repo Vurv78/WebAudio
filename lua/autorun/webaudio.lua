@@ -16,8 +16,9 @@ local Modify = {
 	parented = 32,
 	radius = 64,
 	looping = 128,
+	fft_enabled = 256,
 
-	destroyed = 256
+	destroyed = 512
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
@@ -39,7 +40,7 @@ local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED,
 
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
-local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0, 25500)
+local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0, 100000)
 local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
 
 local Black = Color(0, 0, 0)
@@ -170,6 +171,19 @@ function WebAudio:IsParented()
 	return self.parented
 end
 
+--- Returns if FFT is enabled on this stream.
+-- @return boolean If it's enabled, set by SetFFTEnabled on server.
+function WebAudio:GetFFTEnabled()
+	return self.fft_enabled
+end
+
+--- Returns the fast fourier transform of the webaudio stream.
+-- Only works if self:EnableFFT(true) is called before.
+-- @return table FFT
+function WebAudio:GetFFT()
+	return self.fft
+end
+
 -- Static Methods
 local WebAudioStatic = {}
 -- For consistencies' sake, Static functions will be lowerCamelCase, while object / meta methods will be CamelCase.
@@ -180,30 +194,37 @@ function WebAudioStatic:getNULL()
 	return setmetatable({ destroyed = true }, WebAudio)
 end
 
--- We have these functions so that maybe we can change the number of bits if we make a convar for the global number of WebAudios. Just a thought.
+-- Bit lengths
+local ID_LEN = 13
+local MODIFY_LEN = 10
+local FFTSAMP_LEN = 12
+
+WebAudio.ID_LEN = ID_LEN
+WebAudio.MODIFY_LEN = MODIFY_LEN
+WebAudio.FFTSAMP_LEN = FFTSAMP_LEN
 
 --- Same as net.ReadUInt but doesn't need the bit length in order to adapt our code more easily.
 -- @return number UInt13
 function WebAudioStatic:readID()
-	return net.ReadUInt(13)
+	return net.ReadUInt(ID_LEN)
 end
 
 --- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
 -- @param number id UInt13 (max 8191 id)
 function WebAudioStatic:writeID(id)
-	net.WriteUInt(id, 13)
+	net.WriteUInt(id, ID_LEN)
 end
 
 --- Reads a WebAudio Modify enum
 -- @return number UInt16
 function WebAudioStatic:readModify()
-	return net.ReadUInt(10)
+	return net.ReadUInt(MODIFY_LEN)
 end
 
 --- Writes a WebAudio Modify enum
 -- @param number UInt16
 function WebAudioStatic:writeModify(modify)
-	net.WriteUInt(modify, 10)
+	net.WriteUInt(modify, MODIFY_LEN)
 end
 
 function WebAudioStatic:getFromID(id)
@@ -270,6 +291,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.pos = nil
 	self.direction = Vector()
 	self.looping = false
+	self.fft_enabled = false -- Whether the stream is subbed to receive fft data.
 	-- Mutable --
 
 	self.id = id or getID()
@@ -280,6 +302,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.needs_info = SERVER -- Whether this stream still needs information from the client.
 	self.length = -1
 	self.filename = ""
+	self.fft = {} -- SERVER will receive this every think by default.
 
 	if CLIENT then
 		self.bass = bassobj
