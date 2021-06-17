@@ -150,14 +150,6 @@ e2function number webAudiosLeft()
 end
 
 __e2setcost(4)
-e2function number webAudioWhitelisted(string url)
-    if this == nil then return 0 end
-    if not WebAudio:instanceOf(this) then return 0 end
-    if this:IsDestroyed() then return 0 end
-    return 1
-end
-
-__e2setcost(4)
 e2function number webaudio:isValid()
     return IsValid(this) and 1 or 0
 end
