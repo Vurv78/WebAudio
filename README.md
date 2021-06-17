@@ -102,6 +102,9 @@ Alias of webaudio:setParent(), Unparents the stream from the currently parented 
 ``void webaudio:setRadius(number radius)``  
 Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500. Does not update the object.
 
+``void webaudio:setLooping(number looping)``  
+Sets the stream to loop if n ~= 0, else stops looping.
+
 ## Special
 
 ``number webaudio:pause()``  
@@ -144,3 +147,6 @@ Returns the playback duration / length of the stream. Returns -1 if we haven't r
 
 ``string webaudio:getFileName()``  
 Returns the file name of the webaudio stream. Usually but not always returns the URL of the stream, and will return "" if we haven't received the filename yet.
+
+``number webaudio:getLooping()``  
+Returns if the stream is looping, set by setLooping

@@ -224,6 +224,13 @@ This is a list of Concommands to use with this addon as a server owner and a use
 	[/td]
 	[td] ❌ [/td]
 [/tr]
+[tr]
+	[td]void webaudio:setLooping(number looping)[/td]
+	[td]
+		If looping is not 0, sets the stream to loop. Else stops it from looping.
+	[/td]
+	[td] ❌ [/td]
+[/tr]
 [/table]
 
 
