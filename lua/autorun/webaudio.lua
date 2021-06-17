@@ -183,8 +183,7 @@ end
 
 --- Used internally. Should be called both server and client as it doesn't send any net messages to destroy the ids to the client.
 function WebAudioStatic:disassemble()
-	local WebAudios = WebAudio:getList()
-	for k, stream in pairs(WebAudios) do
+	for k, stream in pairs( WebAudio:getList() ) do
 		stream:Destroy(not SERVER)
 	end
 end

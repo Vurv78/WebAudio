@@ -1,6 +1,6 @@
 -- This file assumes ``autorun/webaudio.lua`` ran right before it.
 
-local Common = WebAudio.Common
+local Common = _G.WebAudio.Common
 local Modify = Common.Modify
 
 util.AddNetworkString("wa_create") -- To send to the client to create a Clientside WebAudio struct
@@ -344,5 +344,5 @@ end
 -- @param Player ply Player to check
 -- @return boolean If the player is subscribed.
 function WebAudioStatic:isSubscribed(ply)
-	return (not StreamDisabledPlayers.__hash[ply])
+	return StreamDisabledPlayers.__hash[ply] != false
 end
