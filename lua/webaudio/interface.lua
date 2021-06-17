@@ -322,5 +322,5 @@ end
 -- @param Player ply Player to check
 -- @return boolean If the player is subscribed.
 function WebAudioStatic:isSubscribed(ply)
-	return StreamDisabledPlayers.__hash[ply] != false
+	return StreamDisabledPlayers.__hash[ply] ~= false
 end

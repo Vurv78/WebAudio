@@ -283,6 +283,10 @@ e2function number webaudio:getRadius()
     return this:GetRadius()
 end
 
+e2function number webaudio:getLooping()
+    return this:GetLooping() and 1 or 0
+end
+
 registerCallback("construct", function(self)
     self.data.webaudio_streams = {}
 end)
