@@ -6,7 +6,7 @@ local warn, notify = Common.warn, Common.notify
 local math_min = math.min
 
 -- Convars
-local Enabled = Common.WAEnabled
+local Enabled, FFTEnabled = Common.WAEnabled, Common.WAFFTEnabled
 local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
 
 local AwaitingChanges = {}
@@ -38,6 +38,7 @@ timer.Create("wa_think", 100 / 1000, 0, function()
 			if
 				stream.fft_enabled and
 				LocalPlayer == stream.owner and
+				FFTEnabled:GetBool() and
 				stream.bass:GetState() == GMOD_CHANNEL_PLAYING
 			then
 				local t = {}

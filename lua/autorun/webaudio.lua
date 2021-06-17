@@ -42,6 +42,7 @@ local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED,
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
 local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0, 100000)
 local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
+local WAFFTEnabled = CreateConVar("wa_fft_enable", "1", FCVAR_ARCHIVE, "Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight.", 0, 1)
 
 local Black = Color(0, 0, 0)
 local Color_Warn = Color(243, 71, 41)
@@ -470,6 +471,7 @@ WebAudio.Common = {
 	WAEnabled = WAEnabled,
 	WAMaxVolume = WAMaxVolume,
 	WAMaxRadius = WAMaxRadius,
+	WAFFTEnabled = WAFFTEnabled,
 
 	-- Whitelist
 	loadWhitelist = loadWhitelist,

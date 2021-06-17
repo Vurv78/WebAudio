@@ -6,7 +6,7 @@ E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web st
 local Common = WebAudio.Common
 
 -- Convars
-local Enabled, AdminOnly = Common.WAEnabled, Common.WAAdminOnly, Common.WAMaxStreamsPerUser
+local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Common.WAFFTEnabled
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
 local StreamCounter = WireLib.RegisterPlayerTable() -- Prevent having more streams than wa_max_streams
@@ -220,8 +220,12 @@ e2function void webaudio:setLooping(number loop)
 end
 
 e2function void webaudio:setFFTEnabled(number enabled)
-    checkPermissions(self)
-    this:SetFFTEnabled( enabled ~= 0 )
+    local en = enabled ~= 0
+    if en then
+        checkPermissions(self)
+        if not FFTEnabled:GetBool() then error("FFT is not enabled on this server!") end
+    end
+    this:SetFFTEnabled(en)
 end
 
 __e2setcost(15)

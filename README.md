@@ -41,6 +41,8 @@ Please note this when making a PR:
 | SERVER | wa_stream_max | 5             | Max number of E2 WebAudio streams a player can have                                                                        |
 | SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
 | SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
+| SHARED | wa_fft_enable | 1             | Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight       |
+
 ## Concommands
 | Realm  | Name                | Description                                                                                                    |
 |--------|---------------------|----------------------------------------------------------------------------------------------------------------|
@@ -155,4 +157,4 @@ Returns if the stream is looping, set by setLooping
 Returns if FFT is enabled for this stream.
 
 ``array webaudio:getFFT()``  
-Returns an array of FFT values that has a length max of 64. Some may be empty to conserve space but are equivalent to 0.
+Returns an array of 64 FFT values from 0-255.
