@@ -197,7 +197,7 @@ end
 -- Bit lengths
 local ID_LEN = 13
 local MODIFY_LEN = 10
-local FFTSAMP_LEN = 12
+local FFTSAMP_LEN = 8
 
 WebAudio.ID_LEN = ID_LEN
 WebAudio.MODIFY_LEN = MODIFY_LEN

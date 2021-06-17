@@ -307,8 +307,9 @@ net.Receive("wa_fft", function(len, ply)
 	if stream and stream.fft_enabled and stream.owner == ply then
 		local samp_len = WebAudio.FFTSAMP_LEN
 		local samples = (len - WebAudio.ID_LEN) / samp_len
-		for i = 1, samples do
-			stream.fft[i] = net.ReadUInt(samp_len)
+		local t = stream.fft
+		for i = 1, 64 do
+			t[i] = i > samples and 0 or net.ReadUInt(samp_len)
 		end
 	end
 end)

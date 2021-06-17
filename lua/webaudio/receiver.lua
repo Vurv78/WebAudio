@@ -3,7 +3,7 @@
 local Common = WebAudio.Common
 local warn, notify = Common.warn, Common.notify
 
-local math_min, math_floor = math.min, math.floor
+local math_min = math.min
 
 -- Convars
 local Enabled = Common.WAEnabled
@@ -49,8 +49,8 @@ timer.Create("wa_think", 100 / 1000, 0, function()
 						-- Multiply the small decimal to a number we will floor and write as a UInt.
 						-- If the number is smaller, it will be more precise for higher numbers.
 						-- If it's larger, it will be more precise for smaller number fft magnitudes.
-						local v = math_floor(t[k] * 1e5)
-						if v == 0 then break end -- Assume the rest of the data is 0.
+						local v = math_min(t[k] * 1e4, 255)
+						if v < 1 then break end -- Assume the rest of the data is 0.
 						net.WriteUInt(v, samp_len)
 					end
 				net.SendToServer()
