@@ -19,6 +19,7 @@ timer.Create("wa_think", 200 / 1000, 0, function()
 	local player_pos = LocalPlayer:GetPos()
 	for id, stream in pairs( WebAudio:getList() ) do
 		local bass = stream.bass
+
 		if bass then
 			-- Handle Parenting
 			local parent, parent_pos = stream.parent, stream.parent_pos
@@ -57,6 +58,8 @@ net.Receive("wa_create", function(len)
 					warn("Invalid WebAudio id [" .. id .. "] ?? Wtf??")
 				end
 				self.bass = bass
+				self.length = bass:GetLength()
+				self.filename = bass:GetFileName()
 
 				local changes_awaiting = AwaitingChanges[id]
 				if changes_awaiting then
@@ -69,8 +72,8 @@ net.Receive("wa_create", function(len)
 					-- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
 					net.Start("wa_info", true)
 						WebAudio:writeID(id)
-						net.WriteUInt(bass:GetLength(), 16)
-						net.WriteString(bass:GetFileName())
+						net.WriteUInt(self.length, 16)
+						net.WriteString(self.filename)
 					net.SendToServer()
 				end
 			else
@@ -153,6 +156,13 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		if handle_bass and self.pos then
 			local dist_to_stream = LocalPlayer():GetPos():Distance( self.pos )
 			bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream / self.radius, 1) ) )
+		end
+	end
+
+	if hasModifyFlag(modify_enum, Modify.looping) then
+		if inside_net then self.looping = net.ReadBool() end
+		if handle_bass then
+			bass:EnableLooping(self.looping)
 		end
 	end
 

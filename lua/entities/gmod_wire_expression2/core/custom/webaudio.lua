@@ -157,6 +157,16 @@ e2function number webAudioWhitelisted(string url)
     return 1
 end
 
+__e2setcost(4)
+e2function number webaudio:isValid()
+    return IsValid(this) and 1 or 0
+end
+
+__e2setcost(2)
+e2function webaudio nowebaudio()
+    return WebAudio:getNULL()
+end
+
 __e2setcost(5)
 e2function void webaudio:setPos(vector pos)
     checkPermissions(self)
@@ -184,7 +194,7 @@ e2function void webaudio:setVolume(number vol)
     this:SetVolume( math.min(vol, MaxVolume:GetInt())/100 )
 end
 
-e2function void webaudio:setTime(number time)
+e2function number webaudio:setTime(number time)
     checkPermissions(self)
     this:SetTime(time)
 end
@@ -204,6 +214,11 @@ e2function void webaudio:setRadius(number radius)
     this:SetRadius( math.min(radius, MaxRadius:GetInt()) )
 end
 
+e2function void webaudio:setLooping(number loop)
+    checkPermissions(self)
+    this:SetLooping( loop ~= 0 )
+end
+
 __e2setcost(15)
 e2function void webaudio:destroy()
     if this:Destroy() then
@@ -219,16 +234,6 @@ e2function number webaudio:update()
     if not canTransmit(self.player) then return 0 end
 
     return this:Transmit() and 1 or 0
-end
-
-__e2setcost(4)
-e2function number webaudio:isValid()
-    return IsValid(this) and 1 or 0
-end
-
-__e2setcost(2)
-e2function webaudio nowebaudio()
-    return WebAudio:getNULL()
 end
 
 __e2setcost(5)

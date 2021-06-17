@@ -29,49 +29,50 @@ end
 
 --- Sets the volume of the stream
 -- Does not transmit
--- @param number n Float Volume (1 is 100%, 2 is 200% ..)
--- @return boolean Whether volume was set. Will return nil if stream is destroyed or n is not number
-function WebAudio:SetVolume(n)
+-- @param number vol Float Volume (1 is 100%, 2 is 200% ..)
+-- @return boolean Successfully set time, will return nil if stream or 'vol' are invalid or 'vol' didn't change.
+function WebAudio:SetVolume(vol)
 	if self:IsDestroyed() then return end
-	if isnumber(n) then
-		self.volume = n
+	if isnumber(vol) and self.volume ~= vol then
+		self.volume = vol
 		self:AddModify(Modify.volume)
+		return true
 	end
 end
 
 --- Sets the current playback time of the stream.
 -- Does not transmit
 -- @param number time UInt16 Playback time
--- @return boolean Whether playback time was successfully set. Will return nil if stream is destroyed or time is not number
+-- @return boolean Successfully set time, will return nil if stream is invalid.
 function WebAudio:SetTime(time)
 	if self:IsDestroyed() then return end
 	if isnumber(time) then
 		self.time = time
-
 		self.stopwatch:SetTime(time)
-
 		self:AddModify(Modify.time)
+		return true
 	end
 end
 
 --- Sets the position of the stream.
--- @param Vector v Position
--- @return boolean Whether the position was set. Will return nil if stream is destroyed, v is not vector, or if the stream is parented.
-function WebAudio:SetPos(v)
+-- @param Vector pos Position
+-- @return boolean Successfully set position, will return nil if stream or 'pos' are invalid or if 'pos' didn't change.
+function WebAudio:SetPos(pos)
 	if self:IsDestroyed() then return end
 	if self:IsParented() then return end
-	if isvector(v) then
-		self.pos = v
+	if isvector(pos) and self.pos ~= pos then
+		self.pos = pos
 		self:AddModify(Modify.pos)
+		return true
 	end
 end
 
 --- Sets the direction in which the stream will play
 -- @param Vector dir Direction to set to
--- @return boolean Whether the direction was successfully set. Will return nil if stream is destroyed or dir is not vector.
+-- @return boolean Successfully set direction, will return nil if stream or 'dir' are invalid or if 'dir' didn't change.
 function WebAudio:SetDirection(dir)
 	if self:IsDestroyed() then return end
-	if isvector(dir) then
+	if isvector(dir) and self.direction ~= dir then
 		self.direction = dir
 		self:AddModify(Modify.direction)
 		return true
@@ -79,34 +80,41 @@ function WebAudio:SetDirection(dir)
 end
 
 --- Resumes or starts the stream.
--- @return boolean Successfully played, will return nil if the stream is destroyed
+-- @return boolean Successfully played, will return nil if the stream is destroyed or if already playing
 function WebAudio:Play()
 	if self:IsDestroyed() then return end
-	self:AddModify(Modify.playing)
-	self.playing = true
-	self:Transmit()
 
-	return true
+	if self.playing == false then
+		self:AddModify(Modify.playing)
+		self.playing = true
+		self:Transmit()
+		return true
+	end
 end
 
 --- Pauses the stream and automatically transmits.
--- @return boolean Successfully paused, will return nil if the stream is destroyed
+-- @return boolean Successfully paused, will return nil if the stream is destroyed or if already paused
 function WebAudio:Pause()
 	if self:IsDestroyed() then return end
-	self:AddModify(Modify.playing)
-	self.playing = false
-	self:Transmit()
 
-	return true
+	if self.playing then
+		self:AddModify(Modify.playing)
+		self.playing = false
+		self:Transmit()
+
+		return true
+	end
 end
 
 --- Sets the playback rate of the stream.
 -- @param number rate Playback rate. Float64 that clamps to 255.
--- @return boolean Successfully set rate, will return false if rate is not a number or if the stream is destroyed
+-- @return boolean Successfully set rate, will return nil if stream or 'rate' are invalid or if 'rate' didn't change.
 function WebAudio:SetPlaybackRate(rate)
 	if self:IsDestroyed() then return end
-	if isnumber(rate) then
-		rate = math.min(rate, 255)
+	if not isnumber(rate) then return end
+
+	rate = math.min(rate, 255)
+	if self.playback_rate ~= rate then
 		self.stopwatch:SetRate(rate)
 
 		self.playback_rate = rate
@@ -117,20 +125,14 @@ end
 
 --- Sets the radius of the stream. Uses Set3DFadeDistance internally.
 -- @param number radius UInt16 radius
--- @return boolean Successfully set radius, will return false if radius is not a number or if the stream is destroyed
+-- @return boolean Successfully set radius, will return nil if the stream or 'radius' are invalid or if radius didn't change.
 function WebAudio:SetRadius(radius)
 	if self:IsDestroyed() then return end
-	if isnumber(radius) then
+	if isnumber(radius) and self.radius ~= radius then
 		self.radius = radius
 		self:AddModify(Modify.radius)
 		return true
 	end
-end
-
---- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
--- @return boolean Whether it's parented
-function WebAudio:IsParented()
-	return self.parented
 end
 
 --- Sets the parent of the WebAudio object. Nil to unparent
@@ -147,6 +149,19 @@ function WebAudio:SetParent(ent)
 	end
 	self:AddModify(Modify.parented)
 	return true
+end
+
+--- Makes the stream loop or stop looping.
+-- @param boolean loop Whether it should be looping
+-- @return boolean If we set it to loop or not. Returns nil if the stream is destroyed or if it's already looping / not looping.
+function WebAudio:SetLooping(loop)
+	if self:IsDestroyed() then return end
+	if self.looping ~= loop then
+		self.stopwatch:SetLooping(loop)
+		self.looping = loop
+		self:AddModify(Modify.looping)
+		return true
+	end
 end
 
 local hasModifyFlag = Common.hasModifyFlag
@@ -185,6 +200,10 @@ function WebAudio:Transmit()
 				net.WriteUInt(self.radius, 16)
 			end
 
+			if hasModifyFlag(modified, Modify.looping) then
+				net.WriteBool(self.looping)
+			end
+
 			if hasModifyFlag(modified, Modify.parented) then
 				net.WriteBool(self.parented)
 				if self.parented then
@@ -221,46 +240,6 @@ function WebAudio:Broadcast()
 	net.SendOmit( table.Add(self.ignored:GetPlayers(), StreamDisabledPlayers.__net) )
 end
 
---- Returns time elapsed in URL stream.
--- Time elapsed is calculated on the server using playback rate and playback time.
--- Not perfect for the clients and there will be desync if you pause and unpause constantly.
--- @return number Elapsed time
-function WebAudio:GetTimeElapsed()
-	return self.stopwatch:GetTime()
-end
-
---- Client paired getters
-
---- Returns the playtime length of a WebAudio object.
--- @return number Playtime Length
-function WebAudio:GetLength()
-	return self.i_length
-end
-
---- Returns the file name of the WebAudio object. Not necessarily always the URL.
--- @return string File name
-function WebAudio:GetFileName()
-	return self.i_filename
-end
-
---- Returns the state of the WebAudio object
--- @return number State, See STOPWATCH_* Enums
-function WebAudio:GetState()
-	return self.stopwatch:GetState()
-end
-
---- Returns the volume of the object set by SetVolume
--- @return number Volume from 0-1
-function WebAudio:GetVolume()
-	return self.volume
-end
-
---- Returns the radius of the stream set by SetRadius
--- @return number Radius
-function WebAudio:GetRadius()
-	return self.radius
-end
-
 --- Stop sending net messages to players who want to ignore certain streams.
 net.Receive("wa_ignore", function(len, ply)
 	if WebAudio:isSubscribed(ply) == false then return end -- They already have wa_enable set to 0
@@ -283,8 +262,8 @@ net.Receive("wa_info", function(len, ply)
 		-- Make sure the stream exists, hasn't already received client info & That the net message sender is the owner of the WebAudio object.
 		local length = net.ReadUInt(16)
 		local file_name = net.ReadString()
-		stream.i_length = length
-		stream.i_filename = file_name
+		stream.length = length
+		stream.filename = file_name
 		stream.needs_info = false
 
 		local watch = stream.stopwatch
@@ -297,7 +276,6 @@ end)
 
 net.Receive("wa_enable", function(len, ply)
 	local enabled = net.ReadBool()
-	print("wa_enable", ply, enabled)
 	if enabled then
 		WebAudio:subscribe(ply)
 	else

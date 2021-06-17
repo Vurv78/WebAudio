@@ -15,8 +15,9 @@ local Modify = {
 	direction = 16,
 	parented = 32,
 	radius = 64,
+	looping = 128,
 
-	destroyed = 128
+	destroyed = 256
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
@@ -113,10 +114,60 @@ function WebAudio:Destroy(transmit)
 	return true
 end
 
+--- Returns time elapsed in URL stream.
+-- Time elapsed is calculated on the server using playback rate and playback time.
+-- Not perfect for the clients and there will be desync if you pause and unpause constantly.
+-- @return number Elapsed time
+function WebAudio:GetTimeElapsed()
+	return self.stopwatch:GetTime()
+end
+
+--- Returns the volume of the object set by SetVolume
+-- @return number Volume from 0-1
+function WebAudio:GetVolume()
+	return self.volume
+end
+
 --- Returns the position of the WebAudio object.
 -- @return vector? Position of the stream or nil if not set.
 function WebAudio:GetPos()
 	return self.pos
+end
+
+--- Returns the radius of the stream set by SetRadius
+-- @return number Radius
+function WebAudio:GetRadius()
+	return self.radius
+end
+
+--- Returns the playtime length of a WebAudio object.
+-- @return number Playtime Length
+function WebAudio:GetLength()
+	return self.length
+end
+
+--- Returns the file name of the WebAudio object. Not necessarily always the URL.
+-- @return string File name
+function WebAudio:GetFileName()
+	return self.filename
+end
+
+--- Returns the state of the WebAudio object
+-- @return number State, See STOPWATCH_* Enums
+function WebAudio:GetState()
+	return self.stopwatch:GetState()
+end
+
+--- Returns whether the webaudio stream is looping (Set by SetLooping.)
+-- @return boolean Looping
+function WebAudio:GetLooping()
+	return self.looping
+end
+
+--- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
+-- @return boolean Whether it's parented
+function WebAudio:IsParented()
+	return self.parented
 end
 
 -- Static Methods
@@ -132,27 +183,27 @@ end
 -- We have these functions so that maybe we can change the number of bits if we make a convar for the global number of WebAudios. Just a thought.
 
 --- Same as net.ReadUInt but doesn't need the bit length in order to adapt our code more easily.
--- @return number UInt9
+-- @return number UInt13
 function WebAudioStatic:readID()
-	return net.ReadUInt(9)
+	return net.ReadUInt(13)
 end
 
 --- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
--- @param number id ID to write in the net message
+-- @param number id UInt13 (max 8191 id)
 function WebAudioStatic:writeID(id)
-	net.WriteUInt(id, 9)
+	net.WriteUInt(id, 13)
 end
 
 --- Reads a WebAudio Modify enum
 -- @return number UInt16
 function WebAudioStatic:readModify()
-	return net.ReadUInt(8)
+	return net.ReadUInt(10)
 end
 
 --- Writes a WebAudio Modify enum
 -- @param number UInt16
 function WebAudioStatic:writeModify(modify)
-	net.WriteUInt(modify, 8)
+	net.WriteUInt(modify, 10)
 end
 
 function WebAudioStatic:getFromID(id)
@@ -218,26 +269,29 @@ local function createWebAudio(_, url, owner, bassobj, id)
 
 	self.pos = nil
 	self.direction = Vector()
+	self.looping = false
 	-- Mutable --
 
 	self.id = id or getID()
 	self.url = url
 	self.owner = owner
 
+	-- Net vars
+	self.needs_info = SERVER -- Whether this stream still needs information from the client.
+	self.length = -1
+	self.filename = ""
+
 	if CLIENT then
 		self.bass = bassobj
 		self.parent_pos = Vector() -- Parent pos being nil means we will go directly to the parent's position w/o calculating local pos.
 	else
-		self.ignored = RecipientFilter()
 		self.stopwatch = StopWatch(100, function(watch)
-			self:Pause()
+			if not watch:GetLooping() then
+				self:Pause()
+			end
 		end)
-		self.needs_info = true -- Whether this stream still needs information from the client.
 
-		-- Info from client
-		self.i_length = -1
-		self.i_filename = ""
-		-- Info from client
+		self.ignored = RecipientFilter()
 
 		net.Start("wa_create", true)
 			WebAudio:writeID(self.id)
