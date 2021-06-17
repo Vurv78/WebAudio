@@ -25,13 +25,7 @@ WebAudio aims to easily solve these issues by:
 * Containing a flexible but safe default whitelist that only allows for large or trusted domains as to not allow for malicious requests.
 
 ## Contributing
-Make an issue if you want something added & Pull requests are always open.
-Please note this when making a PR:
-* Be ready to fix all linting errors (Don't use garry's stupid C operators, use the lua ones, properly indent and remove trailing whitespace)
-* It may not be accepted depending on whether:
-  1. The code isn't efficient
-  2. I would rather implement it myself
-  3. It has a controversial or breaking change
+See CONTRIBUTING.md
 
 ## Convars
 | Realm  | Name          | Default Value | Description                                                                                                                |

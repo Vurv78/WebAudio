@@ -104,7 +104,6 @@ e2function webaudio webAudio(string url)
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
         error("You are creating WebAudios too fast. Check webAudioCanCreate before calling!")
-        --return WebAudio:getNULL()
     end
     CreationTimeTracker[owner] = now
 
@@ -112,7 +111,6 @@ e2function webaudio webAudio(string url)
     local count = StreamCounter[owner] or 0
     if count + 1 > MaxStreams:GetInt() then
         error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
-        --return WebAudio:getNULL()
     end
     StreamCounter[owner] = count + 1
 
