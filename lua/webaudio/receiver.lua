@@ -240,6 +240,7 @@ concommand.Add("wa_purge", function()
 	net.SendToServer()
 end, nil, "Purges all of the currently playing WebAudio streams")
 
+cvars.RemoveChangeCallback("wa_enable", "wa_enable")
 --- When the client toggles wa_enable send this info to the server to stop sending net messages to them.
 cvars.AddChangeCallback("wa_enable", function(convar, old, new)
 	local enabled = new ~= "0"
@@ -249,4 +250,4 @@ cvars.AddChangeCallback("wa_enable", function(convar, old, new)
 	net.Start("wa_enable", true)
 		net.WriteBool(enabled) -- Tell the server to subscribe/unsubscribe us from net messages
 	net.SendToServer()
-end)
+end, "wa_enable")

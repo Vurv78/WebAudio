@@ -307,7 +307,8 @@ end)
 
 hook.Add("PlayerDisconnected", "wa_player_cleanup", function(ply)
 	if ply:IsBot() then return end
-	table.RemoveByValue(StreamDisabledPlayers, ply)
+	table.RemoveByValue(StreamDisabledPlayers.__net, ply)
+	StreamDisabledPlayers.__hash[ply] = nil
 end)
 
 hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
@@ -325,7 +326,7 @@ local WebAudioStatic = WebAudio:getStatics()
 -- @param Player ply Player to check
 function WebAudioStatic:unsubscribe(ply)
 	if WebAudio:isSubscribed(ply) then
-		StreamDisabledPlayers.__hash[ply] = false
+		StreamDisabledPlayers.__hash[ply] = true
 		table.insert(StreamDisabledPlayers.__net, ply)
 	end
 end
@@ -334,7 +335,7 @@ end
 -- @param Player ply Player to subscribe
 function WebAudioStatic:subscribe(ply)
 	if not WebAudio:isSubscribed(ply) then
-		StreamDisabledPlayers.__hash[ply] = true
+		StreamDisabledPlayers.__hash[ply] = false
 		table.RemoveByValue(StreamDisabledPlayers.__net, ply)
 	end
 end
