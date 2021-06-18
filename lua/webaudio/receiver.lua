@@ -38,7 +38,7 @@ net.Receive("wa_fft", function(len)
 	net.SendToServer()
 end)
 
-timer.Create("wa_think", 100 / 1000, 0, function()
+timer.Create("wa_think", 150 / 1000, 0, function()
 	local LocalPlayer = LocalPlayer()
 	if not LocalPlayer or LocalPlayer == NULL then return end
 

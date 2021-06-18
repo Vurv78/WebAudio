@@ -20,6 +20,8 @@ local LastTransmissions = WireLib.RegisterPlayerTable() -- In order to prevent t
 E2Lib.registerConstant( "CHANNEL_STOPPED", STOPWATCH_STOPPED )
 E2Lib.registerConstant( "CHANNEL_PLAYING", STOPWATCH_PLAYING )
 E2Lib.registerConstant( "CHANNEL_PAUSED", STOPWATCH_PAUSED )
+E2Lib.registerConstant( "WA_FFT_SAMPLES", 64 ) -- Default samples #
+E2Lib.registerConstant( "WA_FFT_DELAY", 80 ) -- Delay in ms
 
 
 registerType("webaudio", "xwa", WebAudio:getNULL(),
@@ -279,7 +281,7 @@ e2function number webaudio:getLooping()
     return this:GetLooping() and 1 or 0
 end
 
-__e2setcost(100)
+__e2setcost(800)
 e2function array webaudio:getFFT()
     return this:GetFFT(true, 0.08)
 end
