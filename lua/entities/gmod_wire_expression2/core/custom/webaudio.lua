@@ -5,7 +5,7 @@ E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web st
 
 local WebAudio = WebAudio
 if not WebAudio then
-    WebAudio = require("autorun/webaudio.lua")
+    WebAudio = include("autorun/webaudio.lua")
 end
 local Common = WebAudio.Common
 
