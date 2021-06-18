@@ -33,6 +33,7 @@ desc("setParent(xwa:e)", "Parents the stream position to e, local to the entity.
 desc("setParent(xwa:)", "Unparents the stream")
 desc("setRadius(xwa:n)", "Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500.")
 desc("setLooping(xwa:n)", "If n is not 0, sets the stream to loop. Else stops looping.")
+desc("setFFTEnabled(xwa:n)", "If n is not 0, sets the stream to receive FFT data. Else stops")
 
 -- is* Getters
 desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (If it is not destroyed & Not invalid from quota)")
@@ -43,6 +44,7 @@ desc("getPos(xwa:)", "Returns the current position of the WebAudio object. This 
 desc("getVolume(xwa:)", "Returns the volume of the WebAudio object set by setVolume")
 desc("getRadius(xwa:)", "Returns the radius of the WebAudio object set by setRadius")
 desc("getLooping(xwa:)", "Returns if the stream is looping, set by setLooping")
+desc("getFFTEnabled(xwa:)", "Returns if the stream has FFT enabled")
 
 -- Replicated Clientside behavior on server
 desc("getTime(xwa:)", "Returns the playback time of the stream in seconds.")
@@ -51,6 +53,7 @@ desc("getState(xwa:)", "Returns the state of the stream. 0 is Stopped, 1 is Play
 -- Info received from client
 desc("getLength(xwa:)", "Returns the playback duration of the stream in seconds. Will return -1 if couldn't get length.")
 desc("getFileName(xwa:)", "Returns the file name of the WebAudio stream. Will usually be the URL you give, but not always. Will return \"\" if we haven't received the name yet.")
+desc("getFFT(xwa:)", "Returns the fast fourier transform of the webaudio stream. Only works if self:EnableFFT(true) is called before. It is an array of 64 numbers or less, ranging from 0 to 2^12")
 
 -- Aliases
 desc("unparent(xwa:)", "Alias of xwa:setParent(), Unparents the stream")

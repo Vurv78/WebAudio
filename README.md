@@ -25,13 +25,7 @@ WebAudio aims to easily solve these issues by:
 * Containing a flexible but safe default whitelist that only allows for large or trusted domains as to not allow for malicious requests.
 
 ## Contributing
-Make an issue if you want something added & Pull requests are always open.
-Please note this when making a PR:
-* Be ready to fix all linting errors (Don't use garry's stupid C operators, use the lua ones, properly indent and remove trailing whitespace)
-* It may not be accepted depending on whether:
-  1. The code isn't efficient
-  2. I would rather implement it myself
-  3. It has a controversial or breaking change
+See CONTRIBUTING.md
 
 ## Convars
 | Realm  | Name          | Default Value | Description                                                                                                                |
@@ -41,6 +35,8 @@ Please note this when making a PR:
 | SERVER | wa_stream_max | 5             | Max number of E2 WebAudio streams a player can have                                                                        |
 | SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
 | SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
+| SHARED | wa_fft_enable | 1             | Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight       |
+
 ## Concommands
 | Realm  | Name                | Description                                                                                                    |
 |--------|---------------------|----------------------------------------------------------------------------------------------------------------|
@@ -150,3 +146,9 @@ Returns the file name of the webaudio stream. Usually but not always returns the
 
 ``number webaudio:getLooping()``  
 Returns if the stream is looping, set by setLooping
+
+``number webaudio:getFFTEnabled()``  
+Returns if FFT is enabled for this stream.
+
+``array webaudio:getFFT()``  
+Returns an array of 64 FFT values from 0-255.

@@ -231,6 +231,13 @@ This is a list of Concommands to use with this addon as a server owner and a use
 	[/td]
 	[td] ❌ [/td]
 [/tr]
+[tr]
+	[td]void webaudio:setFFTEnabled(number enable)[/td]
+	[td]
+		If enable is not 0, sets the stream to get FFT data.
+	[/td]
+	[td] ❌ [/td]
+[/tr]
 [/table]
 
 

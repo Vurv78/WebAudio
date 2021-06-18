@@ -6,7 +6,7 @@ E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web st
 local Common = WebAudio.Common
 
 -- Convars
-local Enabled, AdminOnly = Common.WAEnabled, Common.WAAdminOnly, Common.WAMaxStreamsPerUser
+local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Common.WAFFTEnabled
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
 local StreamCounter = WireLib.RegisterPlayerTable() -- Prevent having more streams than wa_max_streams
@@ -104,7 +104,6 @@ e2function webaudio webAudio(string url)
     local now, last = SysTime(), CreationTimeTracker[owner] or 0
     if now - last < 0.15 then
         error("You are creating WebAudios too fast. Check webAudioCanCreate before calling!")
-        --return WebAudio:getNULL()
     end
     CreationTimeTracker[owner] = now
 
@@ -112,7 +111,6 @@ e2function webaudio webAudio(string url)
     local count = StreamCounter[owner] or 0
     if count + 1 > MaxStreams:GetInt() then
         error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
-        --return WebAudio:getNULL()
     end
     StreamCounter[owner] = count + 1
 
@@ -147,14 +145,6 @@ end
 
 e2function number webAudiosLeft()
     return MaxStreams:GetInt() - (StreamCounter[self.player] or 0)
-end
-
-__e2setcost(4)
-e2function number webAudioWhitelisted(string url)
-    if this == nil then return 0 end
-    if not WebAudio:instanceOf(this) then return 0 end
-    if this:IsDestroyed() then return 0 end
-    return 1
 end
 
 __e2setcost(4)
@@ -217,6 +207,15 @@ end
 e2function void webaudio:setLooping(number loop)
     checkPermissions(self)
     this:SetLooping( loop ~= 0 )
+end
+
+e2function void webaudio:setFFTEnabled(number enabled)
+    local en = enabled ~= 0
+    if en then
+        checkPermissions(self)
+        if not FFTEnabled:GetBool() then error("FFT is not enabled on this server!") end
+    end
+    this:SetFFTEnabled(en)
 end
 
 __e2setcost(15)
@@ -285,6 +284,14 @@ end
 
 e2function number webaudio:getLooping()
     return this:GetLooping() and 1 or 0
+end
+
+e2function number webaudio:getFFTEnabled()
+    return this:GetFFTEnabled() and 1 or 0
+end
+
+e2function array webaudio:getFFT()
+    return this:GetFFT()
 end
 
 registerCallback("construct", function(self)

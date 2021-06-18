@@ -8,6 +8,7 @@ util.AddNetworkString("wa_change") -- To send to the client to modify Client Web
 util.AddNetworkString("wa_ignore") -- To receive from the client to make sure to ignore players to send to in WebAudio transmissions
 util.AddNetworkString("wa_enable") -- To receive from the client to make sure people with wa_enable 0 don't get WebAudio transmissions
 util.AddNetworkString("wa_info") -- To receive information about BASS / IGmodAudioChannel streams from clients that create them.
+util.AddNetworkString("wa_fft") -- Receive fft data.
 
 local WebAudio = Common.WebAudio
 
@@ -137,7 +138,7 @@ end
 
 --- Sets the parent of the WebAudio object. Nil to unparent
 -- @param entity? parent Entity to parent to or nil to unparent.
--- @return boolean Whether it was successfully destroyed. Returns false if it was already destroyed.
+-- @return boolean Whether it was successfully parented. Returns nil if the stream is invalid.
 function WebAudio:SetParent(ent)
 	if self:IsDestroyed() then return end
 	if isentity(ent) and ent:IsValid() then
@@ -153,13 +154,24 @@ end
 
 --- Makes the stream loop or stop looping.
 -- @param boolean loop Whether it should be looping
--- @return boolean If we set it to loop or not. Returns nil if the stream is destroyed or if it's already looping / not looping.
+-- @return boolean If we set the value or not. Returns nil if the stream isn't valid or if the value didn't change.
 function WebAudio:SetLooping(loop)
 	if self:IsDestroyed() then return end
 	if self.looping ~= loop then
 		self.stopwatch:SetLooping(loop)
 		self.looping = loop
 		self:AddModify(Modify.looping)
+		return true
+	end
+end
+
+--- Set the stream to accept FFT data periodically.
+-- @param boolean enabled Whether it's enabled or not.
+-- @return boolean If we set the value or not. Returns nil if the stream isn't valid or if the value didn't change.
+function WebAudio:SetFFTEnabled(enabled)
+	if self.fft_enabled ~= enabled then
+		self.fft_enabled = enabled
+		self:AddModify(Modify.fft_enabled)
 		return true
 	end
 end
@@ -202,6 +214,10 @@ function WebAudio:Transmit()
 
 			if hasModifyFlag(modified, Modify.looping) then
 				net.WriteBool(self.looping)
+			end
+
+			if hasModifyFlag(modified, Modify.fft_enabled) then
+				net.WriteBool(self.fft_enabled)
 			end
 
 			if hasModifyFlag(modified, Modify.parented) then
@@ -256,8 +272,7 @@ end)
 -- It gets stuff like average bitrate and length of the song this way.
 -- You'll only be affecting your own streams and chip, so there's no point in "abusing" this.
 net.Receive("wa_info", function(len, ply)
-	local id = WebAudio:readID()
-	local stream = WebAudio:getFromID(id)
+	local stream = WebAudio:getFromID( WebAudio:readID() )
 	if stream and stream.needs_info and stream.owner == ply then
 		-- Make sure the stream exists, hasn't already received client info & That the net message sender is the owner of the WebAudio object.
 		local length = net.ReadUInt(16)
@@ -280,6 +295,22 @@ net.Receive("wa_enable", function(len, ply)
 		WebAudio:subscribe(ply)
 	else
 		WebAudio:unsubscribe(ply)
+	end
+end)
+
+
+-- FFT will be an array of UInts (check FFTSAMP_LEN). It may not be fully filled to 64 samples, some may be nil to conserve bandwidth. Keep this in mind.
+-- We don't have to care for E2 since e2 automatically gives you 0 instead of nil or an error.
+net.Receive("wa_fft", function(len, ply)
+	local stream = WebAudio:getFromID( WebAudio:readID() )
+
+	if stream and stream.fft_enabled and stream.owner == ply then
+		local samp_len = WebAudio.FFTSAMP_LEN
+		local samples = (len - WebAudio.ID_LEN) / samp_len
+		local t = stream.fft
+		for i = 1, 64 do
+			t[i] = i > samples and 0 or net.ReadUInt(samp_len)
+		end
 	end
 end)
 
