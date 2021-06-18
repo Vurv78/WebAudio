@@ -3,6 +3,10 @@
 
 E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web streaming to E2.")
 
+local WebAudio = WebAudio
+if not WebAudio then
+    WebAudio = require("autorun/webaudio.lua")
+end
 local Common = WebAudio.Common
 
 -- Convars
@@ -86,8 +90,6 @@ local function canTransmit(ply)
         -- Every player has a 100ms delay between net transmissions
         LastTransmissions[ply] = now
         return true
-    else
-        return false
     end
 end
 
@@ -209,15 +211,6 @@ e2function void webaudio:setLooping(number loop)
     this:SetLooping( loop ~= 0 )
 end
 
-e2function void webaudio:setFFTEnabled(number enabled)
-    local en = enabled ~= 0
-    if en then
-        checkPermissions(self)
-        if not FFTEnabled:GetBool() then error("FFT is not enabled on this server!") end
-    end
-    this:SetFFTEnabled(en)
-end
-
 __e2setcost(15)
 e2function void webaudio:destroy()
     if this:Destroy() then
@@ -286,12 +279,9 @@ e2function number webaudio:getLooping()
     return this:GetLooping() and 1 or 0
 end
 
-e2function number webaudio:getFFTEnabled()
-    return this:GetFFTEnabled() and 1 or 0
-end
-
+__e2setcost(100)
 e2function array webaudio:getFFT()
-    return this:GetFFT()
+    return this:GetFFT(true, 0.08)
 end
 
 registerCallback("construct", function(self)

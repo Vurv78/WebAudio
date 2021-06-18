@@ -165,15 +165,30 @@ function WebAudio:SetLooping(loop)
 	end
 end
 
---- Set the stream to accept FFT data periodically.
--- @param boolean enabled Whether it's enabled or not.
--- @return boolean If we set the value or not. Returns nil if the stream isn't valid or if the value didn't change.
-function WebAudio:SetFFTEnabled(enabled)
-	if self.fft_enabled ~= enabled then
-		self.fft_enabled = enabled
-		self:AddModify(Modify.fft_enabled)
-		return true
+local LastUpdates = setmetatable({}, {
+	__mode = "k"
+})
+
+--- Returns the fast fourier transform of the webaudio stream.
+-- Only works if self:EnableFFT(true) is called before.
+-- @param boolean update Whether to update the fft values.
+-- @return table FFT
+function WebAudio:GetFFT(update, cooldown)
+	if update and IsValid(self.owner) then
+		if cooldown then
+			local now = SysTime()
+			local last = LastUpdates[self] or 0
+			if now - last > cooldown then
+				LastUpdates[self] = now
+			else
+				return self.fft
+			end
+		end
+		net.Start("wa_fft", true)
+			WebAudio:writeID( self.id )
+		net.Send(self.owner)
 	end
+	return self.fft
 end
 
 local hasModifyFlag = Common.hasModifyFlag
@@ -214,10 +229,6 @@ function WebAudio:Transmit()
 
 			if hasModifyFlag(modified, Modify.looping) then
 				net.WriteBool(self.looping)
-			end
-
-			if hasModifyFlag(modified, Modify.fft_enabled) then
-				net.WriteBool(self.fft_enabled)
 			end
 
 			if hasModifyFlag(modified, Modify.parented) then
@@ -304,7 +315,7 @@ end)
 net.Receive("wa_fft", function(len, ply)
 	local stream = WebAudio:getFromID( WebAudio:readID() )
 
-	if stream and stream.fft_enabled and stream.owner == ply then
+	if stream and stream.owner == ply then
 		local samp_len = WebAudio.FFTSAMP_LEN
 		local samples = (len - WebAudio.ID_LEN) / samp_len
 		local t = stream.fft

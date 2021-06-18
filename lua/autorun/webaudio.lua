@@ -16,9 +16,8 @@ local Modify = {
 	parented = 32,
 	radius = 64,
 	looping = 128,
-	fft_enabled = 256,
 
-	destroyed = 512
+	destroyed = 256
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
@@ -59,7 +58,7 @@ local function notify(...)
 	MsgC(Black, "[", Color_Notify, "WA", Black, "]", White, ": ", msg, "\n")
 end
 
-if WebAudio then
+if WebAudio and WebAudio.disassemble then
 	if SERVER then
 		notify("Reloaded!")
 	end
@@ -172,19 +171,6 @@ function WebAudio:IsParented()
 	return self.parented
 end
 
---- Returns if FFT is enabled on this stream.
--- @return boolean If it's enabled, set by SetFFTEnabled on server.
-function WebAudio:GetFFTEnabled()
-	return self.fft_enabled
-end
-
---- Returns the fast fourier transform of the webaudio stream.
--- Only works if self:EnableFFT(true) is called before.
--- @return table FFT
-function WebAudio:GetFFT()
-	return self.fft
-end
-
 -- Static Methods
 local WebAudioStatic = {}
 -- For consistencies' sake, Static functions will be lowerCamelCase, while object / meta methods will be CamelCase.
@@ -292,7 +278,6 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.pos = nil
 	self.direction = Vector()
 	self.looping = false
-	self.fft_enabled = false -- Whether the stream is subbed to receive fft data.
 	-- Mutable --
 
 	self.id = id or getID()
