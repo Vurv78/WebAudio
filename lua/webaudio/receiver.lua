@@ -148,7 +148,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 	if hasModifyFlag(modify_enum, Modify.time) then
 		if inside_net then self.time = net.ReadUInt(16) end
 		if handle_bass then
-			bass:SetTime(self.time) -- 18 hours max, if you need more, wtf..
+			bass:SetTime(self.time, true) -- 18 hours max, if you need more, wtf..
 		end
 	end
 
