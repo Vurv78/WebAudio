@@ -283,7 +283,7 @@ end
 
 __e2setcost(800)
 e2function array webaudio:getFFT()
-    return this:GetFFT(true, 0.08)
+    return this:GetFFT(true, 0.08) or {}
 end
 
 registerCallback("construct", function(self)

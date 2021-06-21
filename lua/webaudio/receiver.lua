@@ -64,53 +64,83 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 	end
 end)
 
+local function streamFailed(id)
+	net.Start("wa_info", true)
+		WebAudio:writeID(id)
+		net.WriteBool(true)
+	net.Send()
+end
+
 net.Receive("wa_create", function(len)
 	local id, url, owner = WebAudio:readID(), net.ReadString(), net.ReadEntity()
 
 	if not Enabled:GetBool() then
 		-- Shouldn't happen anymore
-		notify("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url)
-		return
+		return notify("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url)
 	end
 
-	if WebAudio:isWhitelistedURL(url) then
-		notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
-		sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
-			if not errid then
-				local self = WebAudio:getFromID(id)
-				if not self then
-					bass:Stop()
-					bass = nil
-					warn("Invalid WebAudio id [" .. id .. "] ?? Wtf??")
-				end
-				self.bass = bass
-				self.length = bass:GetLength()
-				self.filename = bass:GetFileName()
-
-				local changes_awaiting = AwaitingChanges[id]
-				if changes_awaiting then
-					updateObject(id, changes_awaiting, true, false)
-					AwaitingChanges[id] = nil
-				end
-
-
-				if owner == LocalPlayer() then
-					-- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
-					net.Start("wa_info", true)
-						WebAudio:writeID(id)
-						net.WriteUInt(self.length, 16)
-						net.WriteString(self.filename)
-					net.SendToServer()
-				end
-			else
-				warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
-			end
-		end)
-
-		WebAudio(url, owner, nil, id) -- Register object
-	else
-		warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner, owner:SteamID64(), url)
+	if not WebAudio:isWhitelistedURL(url) then
+		return warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
 	end
+
+	-- If a stream failed in one of several ways
+	local function streamFailed() end
+	if owner == LocalPlayer() then
+		function streamFailed(id)
+			net.Start("wa_info", true)
+				WebAudio:writeID(id)
+				net.WriteBool(true)
+			net.SendToServer()
+		end
+	end
+
+	notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
+	sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
+		if errid then
+			streamFailed(id)
+			return warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
+		end
+		if not bass:IsValid() then
+			streamFailed(id)
+			return warn("WebAudio object with id [%d]'s IGModAudioChannel object was null!", id)
+		end
+
+		local self = WebAudio:getFromID(id)
+		if not self then
+			bass:Stop()
+			bass = nil
+			streamFailed(id)
+			return warn("Invalid WebAudio id [" .. id .. "] ?? Wtf??")
+		end
+
+		if bass:IsBlockStreamed() then
+			streamFailed(id)
+			return warn("URL [%s] was incompatible for WebAudio; It is block-streamed!", url)
+		end
+
+		self.bass = bass
+		self.length = bass:GetLength()
+		self.filename = bass:GetFileName()
+
+		local changes_awaiting = AwaitingChanges[id]
+		if changes_awaiting then
+			updateObject(id, changes_awaiting, true, false)
+			AwaitingChanges[id] = nil
+		end
+
+
+		if owner == LocalPlayer() then
+			-- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
+			net.Start("wa_info", true)
+				WebAudio:writeID(id)
+				net.WriteBool(false)
+				net.WriteUInt(self.length, 16)
+				net.WriteString(self.filename)
+			net.SendToServer()
+		end
+	end)
+
+	WebAudio(url, owner, nil, id) -- Register object
 end)
 
 local Modify = Common.Modify

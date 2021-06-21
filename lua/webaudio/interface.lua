@@ -170,10 +170,11 @@ local LastUpdates = setmetatable({}, {
 })
 
 --- Returns the fast fourier transform of the webaudio stream.
--- Only works if self:EnableFFT(true) is called before.
+-- Returns nil if invalid.
 -- @param boolean update Whether to update the fft values.
 -- @return table FFT
 function WebAudio:GetFFT(update, cooldown)
+	if self:IsDestroyed() then return end
 	if update and IsValid(self.owner) then
 		if cooldown then
 			local now = SysTime()
@@ -286,17 +287,22 @@ net.Receive("wa_info", function(len, ply)
 	local stream = WebAudio:getFromID( WebAudio:readID() )
 	if stream and stream.needs_info and stream.owner == ply then
 		-- Make sure the stream exists, hasn't already received client info & That the net message sender is the owner of the WebAudio object.
-		local length = net.ReadUInt(16)
-		local file_name = net.ReadString()
-		stream.length = length
-		stream.filename = file_name
-		stream.needs_info = false
+		if net.ReadBool() then
+			-- Failed to create. Doesn't support 3d, or is block streamed.
+			stream:Destroy()
+		else
+			local length = net.ReadUInt(16)
+			local file_name = net.ReadString()
+			stream.length = length
+			stream.filename = file_name
+			stream.needs_info = false
 
-		local watch = stream.stopwatch
-		watch:SetDuration(length)
-		watch:SetRate(stream.playback_rate)
-		watch:SetTime(stream.time)
-		watch:Start()
+			local watch = stream.stopwatch
+			watch:SetDuration(length)
+			watch:SetRate(stream.playback_rate)
+			watch:SetTime(stream.time)
+			watch:Start()
+		end
 	end
 end)
 
