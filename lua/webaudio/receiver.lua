@@ -64,13 +64,6 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 	end
 end)
 
-local function streamFailed(id)
-	net.Start("wa_info", true)
-		WebAudio:writeID(id)
-		net.WriteBool(true)
-	net.Send()
-end
-
 net.Receive("wa_create", function(len)
 	local id, url, owner = WebAudio:readID(), net.ReadString(), net.ReadEntity()
 
