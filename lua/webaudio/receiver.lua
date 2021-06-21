@@ -77,24 +77,22 @@ net.Receive("wa_create", function(len)
 	end
 
 	-- If a stream failed in one of several ways
-	local function streamFailed() end
-	if owner == LocalPlayer() then
-		function streamFailed(id)
-			net.Start("wa_info", true)
-				WebAudio:writeID(id)
-				net.WriteBool(true)
-			net.SendToServer()
-		end
-	end
+	-- This is by far the most atrocious thing I've done
+	local streamFailed = (owner == LocalPlayer()) and function()
+		net.Start("wa_info", true)
+			WebAudio:writeID(id)
+			net.WriteBool(true)
+		net.SendToServer()
+	end or function() end
 
 	notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
 	sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
 		if errid then
-			streamFailed(id)
+			streamFailed()
 			return warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
 		end
 		if not bass:IsValid() then
-			streamFailed(id)
+			streamFailed()
 			return warn("WebAudio object with id [%d]'s IGModAudioChannel object was null!", id)
 		end
 
@@ -102,12 +100,12 @@ net.Receive("wa_create", function(len)
 		if not self then
 			bass:Stop()
 			bass = nil
-			streamFailed(id)
+			streamFailed()
 			return warn("Invalid WebAudio id [" .. id .. "] ?? Wtf??")
 		end
 
 		if bass:IsBlockStreamed() then
-			streamFailed(id)
+			streamFailed()
 			return warn("URL [%s] was incompatible for WebAudio; It is block-streamed!", url)
 		end
 
