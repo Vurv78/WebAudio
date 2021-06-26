@@ -5,7 +5,7 @@ local function desc(name, description)
     tbl[name] = description
 end
 
-desc("webAudio(s)", "Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!")
+desc("webAudio(s)", "Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 500 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!")
 desc("webAudiosLeft()", "Returns the number of WebAudio objects you can create in total for your player")
 desc("webAudioCanCreate()", "Returns whether you can create a WebAudio object. Checks cooldown and whether you have another slot for a webaudio stream left.")
 desc("webAudioCanCreate(s)", "Same as webAudioCanCreate() but also checks if a URL is whitelisted on the server to use.")

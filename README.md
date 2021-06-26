@@ -3,7 +3,8 @@
 
 This is an addon for garrysmod that adds a serverside ``WebAudio`` class which can be used to interact with clientside IGmodAudioChannels asynchronously.  
 It also adds an extension for Expression2 to interact with these in a safe manner.  
-You can consider this as a safe and more robust replacement for the popular Streamcore addon, and I advise you to replace it for the safety of your server and it's population.
+
+You can consider this as a safe and more robust replacement for the popular Streamcore addon, and I advise you to replace it for the safety of your server and its population.
 ``Documentation`` can be found at the bottom of this file
 
 To convert your Streamcore contraptions to *WebAudio*, see [from Streamcore to WebAudio](https://github.com/Vurv78/WebAudio/wiki/From-StreamCore-To-WebAudio)
@@ -21,7 +22,7 @@ If you do not know already, Streamcore is a dangerous addon in several ways.
 
 WebAudio aims to easily solve these issues by:
 * Having proper net limits
-* Using a customizable whitelist for both your server & it's clients.
+* Using a customizable whitelist for both your server & its clients.
 * Containing a flexible but safe default whitelist that only allows for large or trusted domains as to not allow for malicious requests.
 
 ## Contributing
@@ -47,7 +48,7 @@ See CONTRIBUTING.md
 
 ``webaudio webAudio(string url)``  
 Returns a **WebAudio** object of that URL as long as it is whitelisted by the server.  
-Has a 150 ms cooldown between calls. If you can't create a webAudio object, will error, so check ``webAudioCanCreate`` before calling this!
+Has a 500 ms cooldown between calls. If you can't create a webAudio object, it will error, so check ``webAudioCanCreate`` before calling this!
 
 ``number webAudiosLeft()``  
 Returns how many WebAudios you can create.

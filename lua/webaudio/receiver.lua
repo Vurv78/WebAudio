@@ -91,21 +91,24 @@ net.Receive("wa_create", function(len)
 			streamFailed()
 			return warn("Error when creating WebAudio receiver with id %d, Error [%s]", id, errname)
 		end
+
 		if not bass:IsValid() then
 			streamFailed()
 			return warn("WebAudio object with id [%d]'s IGModAudioChannel object was null!", id)
 		end
 
 		local self = WebAudio:getFromID(id)
-		if not self then
+		if not ( self and self:IsValid() ) then
 			bass:Stop()
 			bass = nil
 			streamFailed()
-			return warn("Invalid WebAudio id [" .. id .. "] ?? Wtf??")
+			return warn("Invalid WebAudio with id [" .. id .. "], did you destroy it before it even loaded?")
 		end
 
 		if bass:IsBlockStreamed() then
 			streamFailed()
+			bass:Stop()
+			bass = nil
 			return warn("URL [%s] was incompatible for WebAudio; It is block-streamed!", url)
 		end
 
@@ -121,6 +124,10 @@ net.Receive("wa_create", function(len)
 
 
 		if owner == LocalPlayer() then
+			if not self:IsValid() then
+				-- It was destroyed inside of AwaitingChanges. Usually some dude spamming it.
+				return
+			end
 			-- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
 			net.Start("wa_info", true)
 				WebAudio:writeID(id)
