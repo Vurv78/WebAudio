@@ -7,17 +7,17 @@
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
-	volume = 0,
-	time = 1,
-	pos = 2,
-	playing = 4,
-	playback_rate = 8,
-	direction = 16,
-	parented = 32,
-	radius = 64,
-	looping = 128,
+	volume = 1,
+	time = 2,
+	pos = 4,
+	playing = 8,
+	playback_rate = 16,
+	direction = 32,
+	parented = 64,
+	radius = 128,
+	looping = 256,
 
-	destroyed = 256
+	destroyed = 512
 }
 
 local function hasModifyFlag(...) return bit.band(...) ~= 0 end
