@@ -240,8 +240,9 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		end
 
 		if handle_bass and self.parented then
-			local parent, parent_pos = self.parent, self.parent_pos
+			local parent = self.parent
 			if parent and parent ~= NULL then
+				local parent_pos = self.parent_pos
 				local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
 				bass:SetPos( position )
 				self.pos = position
