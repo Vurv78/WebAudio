@@ -40,7 +40,7 @@ end)
 
 timer.Create("wa_think", 150 / 1000, 0, function()
 	local LocalPlayer = LocalPlayer()
-	if not LocalPlayer or LocalPlayer == NULL then return end
+	if not IsValid(LocalPlayer) then return end
 
 	local player_pos = LocalPlayer:GetPos()
 	for id, stream in pairs( WebAudio:getList() ) do
@@ -49,7 +49,7 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 		if bass then
 			-- Handle Parenting
 			local parent, parent_pos = stream.parent, stream.parent_pos
-			if parent and parent ~= NULL then
+			if IsValid(parent) then
 				local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
 				bass:SetPos( position )
 				stream.pos = position
@@ -241,7 +241,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 
 		if handle_bass and self.parented then
 			local parent = self.parent
-			if parent and parent ~= NULL then
+			if IsValid(parent) then
 				local parent_pos = self.parent_pos
 				local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
 				bass:SetPos( position )
