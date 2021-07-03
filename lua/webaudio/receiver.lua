@@ -69,15 +69,15 @@ net.Receive("wa_create", function(len)
 
 	if not Enabled:GetBool() then
 		-- Shouldn't happen anymore
-		return notify("%s(%d) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64(), url)
+		return notify("%s(%s) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64() or "multirun", url)
 	end
 
 	if not WebAudio:isWhitelistedURL(url) then
-		return warn("User %s(%d) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
+		return warn("User %s(%s) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64() or "multirun", url)
 	end
 
 	-- If a stream failed in one of several ways
-	-- This is by far the most atrocious thing I've done
+	-- Really ugly syntax
 	local streamFailed = (owner == LocalPlayer()) and function()
 		net.Start("wa_info", true)
 			WebAudio:writeID(id)
@@ -85,7 +85,7 @@ net.Receive("wa_create", function(len)
 		net.SendToServer()
 	end or function() end
 
-	notify("User %s(%d) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64(), url)
+	notify("User %s(%s) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64() or "multirun", url)
 	sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
 		if errid then
 			streamFailed()
