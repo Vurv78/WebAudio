@@ -12,11 +12,11 @@ util.AddNetworkString("wa_fft") -- Receive fft data.
 
 local WebAudio = Common.WebAudio
 
--- TODO: Make this table + hash table version cancer an object or just do this another way. I'm not sure how to do it.
+--- TODO: Make this nicer?
 -- I would use a CRecipientFilter but I also need to add the people with wa_enable to 0 rather than just the people who used wa_purge to kill certain objects.
--- If you could merge two CRecipientFilters that'd be cool
+-- If you could merge two CRecipientFilters that'd be cool.
 local StreamDisabledPlayers = { -- People who have wa_enabled set to 0
-	__hash = {},
+	__hash = {}, -- If __hash[ply] is false, the player is already subscribed. We use this to not add multiple players and get the subbed status
 	__net = {} -- Net friendly array
 }
 
@@ -307,8 +307,7 @@ net.Receive("wa_info", function(len, ply)
 end)
 
 net.Receive("wa_enable", function(len, ply)
-	local enabled = net.ReadBool()
-	if enabled then
+	if net.ReadBool() then
 		WebAudio:subscribe(ply)
 	else
 		WebAudio:unsubscribe(ply)
@@ -370,5 +369,5 @@ end
 -- @param Player ply Player to check
 -- @return boolean If the player is subscribed.
 function WebAudioStatic:isSubscribed(ply)
-	return StreamDisabledPlayers.__hash[ply] ~= false
+	return not StreamDisabledPlayers.__hash[ply]
 end
