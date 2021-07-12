@@ -1,0 +1,79 @@
+@name WebAudio Radio
+@model models/props_lab/citizenradio.mdl
+#Author Vurv
+
+# Note this will use a lot of ops since it runs on tick instead of every _WA_FFT_DELAY.
+# You can easily make it keep track of if it's playing with a persistent global var.
+
+@persist Prefixes:table Stream:webaudio
+
+if( chatClk() ) {
+    local LS = lastSaid()
+    if(Prefixes[LS[1],number]) {
+        local Args = LS:explode(" ")
+        local Cmd = Args:removeString(1):sub(2)
+        
+        switch (Cmd) {
+            case "start",
+                if( Stream:isValid() ) {
+                    print("Stream already exists!")
+                } else {
+                    local URL = Args:removeString(1)
+                    if ( webAudioCanCreate(URL) ) {
+                        Stream = webAudio(URL)
+                        Stream:setParent(entity())
+                        Stream:setRadius(5000)
+                        Stream:play()
+
+                        runOnTick(1)
+                    } else {
+                        print("Bad URL / Audio cooldown!")
+                    }
+                }
+            break,
+            
+            case "volume",
+                local Vol = Args:removeString(1):toNumber()
+                Stream:setVolume(Vol)
+            break,
+            
+            case "speed",
+                local Speed = Args:removeString(1):toNumber()
+
+                Stream:setPlaybackRate(Speed)
+            break,
+            
+            case "stop",
+                Stream:destroy()
+                runOnTick(0)
+            break,
+            
+            case "play",
+                Stream:play()
+                runOnTick(1)
+            break,
+            
+            case "pause",
+                Stream:pause()    
+                runOnTick(0)
+            break
+        }
+    }
+} elseif( tickClk() ) {
+    local FFT = Stream:getFFT()
+    for (I = 1, _WA_FFT_SAMPLES) {
+        holoScaleUnits(I, vec(0.5, 0.5, FFT[I, number]/4) )
+    }
+}elseif ( first() ) {
+    runOnChat(1)
+    Prefixes = table(
+        "!" = 1,
+        "?" = 1
+    )
+    
+    local E = entity()
+    for (I = 1, _WA_FFT_SAMPLES) {
+        holoCreate(I, E:toWorld(vec(1, 20+I, 10)), vec(0.03, 0.01, 0.01) )
+        holoParent(I, E)
+    }
+}
