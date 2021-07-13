@@ -13,7 +13,7 @@ local AwaitingChanges = {}
 local updateObject -- To be declared below
 
 net.Receive("wa_fft", function(len)
-	local stream = WebAudio:getFromID( WebAudio:readID() )
+	local stream = WebAudio.readStream()
 	if not stream then return end
 	if not FFTEnabled:GetBool() then return end
 
@@ -26,7 +26,7 @@ net.Receive("wa_fft", function(len)
 	local samp_len = WebAudio.FFTSAMP_LEN
 
 	net.Start("wa_fft", true)
-		WebAudio:writeID(stream.id)
+		WebAudio.writeID(stream.id)
 		for k = 2, filled, 2 do
 			-- Multiply the small decimal to a number we will floor and write as a UInt.
 			-- If the number is smaller, it will be more precise for higher numbers.
@@ -43,7 +43,7 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 	if not IsValid(LocalPlayer) then return end
 
 	local player_pos = LocalPlayer:GetPos()
-	for id, stream in pairs( WebAudio:getList() ) do
+	for id, stream in pairs( WebAudio.getList() ) do
 		local bass = stream.bass
 
 		if bass then
@@ -65,22 +65,24 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 end)
 
 net.Receive("wa_create", function(len)
-	local id, url, owner = WebAudio:readID(), net.ReadString(), net.ReadEntity()
+	local id, url, owner = WebAudio.readID(), net.ReadString(), net.ReadEntity()
 
 	if not Enabled:GetBool() then
 		-- Shouldn't happen anymore
 		return notify("%s(%s) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64() or "multirun", url)
 	end
 
-	if not WebAudio:isWhitelistedURL(url) then
+	if not WebAudio.isWhitelistedURL(url) then
 		return warn("User %s(%s) tried to create unwhitelisted WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64() or "multirun", url)
 	end
 
+	local is_stream_owner = owner == LocalPlayer()
+
 	-- If a stream failed in one of several ways
 	-- Really ugly syntax
-	local streamFailed = (owner == LocalPlayer()) and function()
+	local streamFailed = is_stream_owner and function()
 		net.Start("wa_info", true)
-			WebAudio:writeID(id)
+			WebAudio.writeID(id)
 			net.WriteBool(true)
 		net.SendToServer()
 	end or function() end
@@ -97,12 +99,18 @@ net.Receive("wa_create", function(len)
 			return warn("WebAudio object with id [%d]'s IGModAudioChannel object was null!", id)
 		end
 
-		local self = WebAudio:getFromID(id)
+		local self = WebAudio.getFromID(id)
 		if not ( self and self:IsValid() ) then
 			bass:Stop()
 			bass = nil
 			streamFailed()
-			return warn("Invalid WebAudio with id [" .. id .. "], did you destroy it before it even loaded?")
+
+			if is_stream_owner then
+				-- Have it only warn for the owner in preparation for #33
+				-- Shouldn't be possible right now unless some one sends a destroy net message to a random id with sv lua.
+				warn("Invalid WebAudio with id [" .. id .. "], did you destroy it before it even loaded?")
+			end
+			return
 		end
 
 		if bass:IsBlockStreamed() then
@@ -122,7 +130,6 @@ net.Receive("wa_create", function(len)
 			AwaitingChanges[id] = nil
 		end
 
-
 		if owner == LocalPlayer() then
 			if not self:IsValid() then
 				-- It was destroyed inside of AwaitingChanges. Usually some dude spamming it.
@@ -130,7 +137,7 @@ net.Receive("wa_create", function(len)
 			end
 			-- Only send WebAudio info if LocalPlayer is the owner of the WebAudio object. Will also check on server to avoid abuse.
 			net.Start("wa_info", true)
-				WebAudio:writeID(id)
+				WebAudio.writeID(id)
 				net.WriteBool(false)
 				net.WriteUInt(self.length, 16)
 				net.WriteString(self.filename)
@@ -145,13 +152,13 @@ local Modify = Common.Modify
 local hasModifyFlag = Common.hasModifyFlag
 
 --- Stores changes on the Receiver object
--- @param number id ID of the Receiver Object, to be used to search the table of 'WebAudio:getList()'
+-- @param number id ID of the Receiver Object, to be used to search the table of 'WebAudio.getList()'
 -- @param number modify_enum Mixed bitwise flag that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
 -- @param boolean handle_bass Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
 -- @param boolean inside_net Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
 function updateObject(id, modify_enum, handle_bass, inside_net)
 	-- Object destroyed
-	local self = WebAudio:getFromID(id)
+	local self = WebAudio.getFromID(id)
 	local bass = self.bass
 
 	-- Keep in mind that the order of these needs to sync with wa_interface's reading order.
@@ -266,8 +273,8 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 end
 
 net.Receive("wa_change", function(len)
-	local id, modify_enum = WebAudio:readID(), WebAudio:readModify()
-	local obj = WebAudio:getFromID(id)
+	local id, modify_enum = WebAudio.readID(), WebAudio.readModify()
+	local obj = WebAudio.getFromID(id)
 
 	if AwaitingChanges[id] then return end
 	if not obj then return end -- Object was destroyed on the client for whatever reason. Most likely reason is wa_purge
@@ -285,20 +292,21 @@ end)
 --- Stops every currently existing stream
 -- @param boolean write_ids Whether to net write IDs or not while looping through the streams. Used for wa_ignore.
 local function stopStreams(write_ids)
-	for id, stream in pairs( WebAudio:getList() ) do
+	for id, stream in WebAudio.getIterator() do
 		if stream then
 			stream:Destroy()
 			if write_ids then
 				-- If we are in wa_purge
-				WebAudio:writeID(id)
+				WebAudio.writeID(id)
 			end
 		end
 	end
 end
 
 concommand.Add("wa_purge", function()
-	local stream_count = table.Count( WebAudio:getList() )
+	local stream_count = WebAudio.getCountActive()
 	if stream_count == 0 then return end
+
 	net.Start("wa_ignore", true)
 		net.WriteUInt(stream_count, 8)
 		stopStreams(true)
@@ -306,6 +314,7 @@ concommand.Add("wa_purge", function()
 end, nil, "Purges all of the currently playing WebAudio streams")
 
 cvars.RemoveChangeCallback("wa_enable", "wa_enable")
+
 --- When the client toggles wa_enable send this info to the server to stop sending net messages to them.
 cvars.AddChangeCallback("wa_enable", function(convar, old, new)
 	local enabled = new ~= "0"

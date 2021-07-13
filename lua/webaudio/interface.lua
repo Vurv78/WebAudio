@@ -186,7 +186,7 @@ function WebAudio:GetFFT(update, cooldown)
 			end
 		end
 		net.Start("wa_fft", true)
-			WebAudio:writeID( self.id )
+			WebAudio.writeID( self.id )
 		net.Send(self.owner)
 	end
 	return self.fft
@@ -199,9 +199,9 @@ function WebAudio:Transmit()
 	if self:IsDestroyed() then return end
 	net.Start("wa_change", true)
 		-- Always present values
-		WebAudio:writeID(self.id)
+		WebAudio.writeID(self.id)
 		local modified = self.modified
-		WebAudio:writeModify(modified)
+		WebAudio.writeModify(modified)
 
 		if not hasModifyFlag(modified, Modify.destroyed) then
 			if hasModifyFlag(modified, Modify.volume) then
@@ -262,18 +262,19 @@ function WebAudio:Subscribe(ply)
 end
 
 --- Runs net.SendOmit for you, just broadcasts the webaudio to all players with the object enabled.
--- Does not broadcast to people who have destroyed the object on their client
--- Does not broadcast to people with wa_enable set to 0.
+-- Does ❌ broadcast to people who have destroyed the object on their client
+-- Does ❌ broadcast to people with wa_enable set to 0
 function WebAudio:Broadcast()
+	-- Todo: Manually build this table because table.Add here is pretty bad for perf
 	net.SendOmit( table.Add(self.ignored:GetPlayers(), StreamDisabledPlayers.__net) )
 end
 
 --- Stop sending net messages to players who want to ignore certain streams.
 net.Receive("wa_ignore", function(len, ply)
-	if WebAudio:isSubscribed(ply) == false then return end -- They already have wa_enable set to 0
+	if WebAudio.isSubscribed(ply) == false then return end -- They already have wa_enable set to 0
 	local n_ignores = net.ReadUInt(8)
 	for k = 1, n_ignores do
-		local stream = WebAudio:getFromID(WebAudio:readID())
+		local stream = WebAudio.readStream()
 		if stream then
 			stream:Unsubscribe(ply)
 		end -- Doesn't exist anymore, maybe got removed when the net message was sending
@@ -284,7 +285,7 @@ end)
 -- It gets stuff like average bitrate and length of the song this way.
 -- You'll only be affecting your own streams and chip, so there's no point in "abusing" this.
 net.Receive("wa_info", function(len, ply)
-	local stream = WebAudio:getFromID( WebAudio:readID() )
+	local stream = WebAudio.readStream()
 	if stream and stream.needs_info and stream.owner == ply then
 		-- Make sure the stream exists, hasn't already received client info & That the net message sender is the owner of the WebAudio object.
 		if net.ReadBool() then
@@ -308,9 +309,9 @@ end)
 
 net.Receive("wa_enable", function(len, ply)
 	if net.ReadBool() then
-		WebAudio:subscribe(ply)
+		WebAudio.subscribe(ply)
 	else
-		WebAudio:unsubscribe(ply)
+		WebAudio.unsubscribe(ply)
 	end
 end)
 
@@ -318,7 +319,7 @@ end)
 -- FFT will be an array of UInts (check FFTSAMP_LEN). It may not be fully filled to 64 samples, some may be nil to conserve bandwidth. Keep this in mind.
 -- We don't have to care for E2 since e2 automatically gives you 0 instead of nil or an error.
 net.Receive("wa_fft", function(len, ply)
-	local stream = WebAudio:getFromID( WebAudio:readID() )
+	local stream = WebAudio.readStream()
 
 	if stream and stream.owner == ply then
 		local samp_len = WebAudio.FFTSAMP_LEN
@@ -340,17 +341,17 @@ hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
 	if ply:IsBot() then return end
 
 	if ply:GetInfoNum("wa_enable", 1) == 0 then
-		WebAudio:unsubscribe(ply)
+		WebAudio.unsubscribe(ply)
 	end
 end)
 
-local WebAudioStatic = WebAudio:getStatics()
+local WebAudioStatic = WebAudio.getStatics()
 
 --- Unsubscribe a player from receiving WebAudio net messages
 -- Like the non-static method but for all future Streams & Messages
 -- @param Player ply Player to check
-function WebAudioStatic:unsubscribe(ply)
-	if WebAudio:isSubscribed(ply) then
+function WebAudioStatic.unsubscribe(ply)
+	if WebAudio.isSubscribed(ply) then
 		StreamDisabledPlayers.__hash[ply] = true
 		table.insert(StreamDisabledPlayers.__net, ply)
 	end
@@ -358,8 +359,8 @@ end
 
 --- Resubscribe a player to receive WebAudio net messages
 -- @param Player ply Player to subscribe
-function WebAudioStatic:subscribe(ply)
-	if not WebAudio:isSubscribed(ply) then
+function WebAudioStatic.subscribe(ply)
+	if not WebAudio.isSubscribed(ply) then
 		StreamDisabledPlayers.__hash[ply] = false
 		table.RemoveByValue(StreamDisabledPlayers.__net, ply)
 	end
@@ -368,6 +369,6 @@ end
 --- Returns whether the player is subscribed to receive WebAudio net messages or not.
 -- @param Player ply Player to check
 -- @return boolean If the player is subscribed.
-function WebAudioStatic:isSubscribed(ply)
+function WebAudioStatic.isSubscribed(ply)
 	return not StreamDisabledPlayers.__hash[ply]
 end

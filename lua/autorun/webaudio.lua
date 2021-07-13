@@ -60,9 +60,10 @@ end
 
 if WebAudio and WebAudio.disassemble then
 	if SERVER then
+		-- Make sure to also run wire_expression2_reload (after this) if working on this addon with hot reloading.
 		notify("Reloaded!")
 	end
-	WebAudio:disassemble()
+	WebAudio.disassemble()
 end
 
 --[[
@@ -74,9 +75,46 @@ _G.WebAudio = {}
 WebAudio.__index = WebAudio
 
 local WebAudioCounter = 0
-local WebAudios = setmetatable({}, {
-	--__mode = "kv" -- TODO: See why weak kv doesn't work clientside.
-})
+local WebAudios = {} -- TODO: See why weak kv doesn't work clientside for this
+
+local MaxID = 1023 -- UInt10. Only 1024 concurrent webaudio streams are allowed, if you use more than that then you've probably already broken the server
+local TopID = -1 -- Current top-most id. Set to -1 since we will increment first, having the ids start at 0.
+local IsSequential = true -- Boost for initial creation when no IDs have been dropped.
+
+local function register(id)
+	-- id is set as occupied in the constructor through WebAudios
+	WebAudioCounter = WebAudioCounter + 1
+	TopID = id
+	return id
+end
+
+--- Alloc an id for a webaudio stream & register it to WebAudios
+-- Modified from https://gist.github.com/Vurv78/2de64f77d04eb409abed008ab000e5ef
+-- @param self WebAudio stream
+local function allocID()
+	if WebAudioCounter > MaxID then return end
+
+	if IsSequential then
+		return register(TopID + 1)
+	end
+
+	local left_until_loop = MaxID - TopID
+
+	-- Avoid constant modulo with two for loops
+
+	for i = 1, left_until_loop do
+		local i2 = TopID + i
+		if not WebAudios[i2] then
+			return register(i2)
+		end
+	end
+
+	for i = 0, TopID do
+		if not WebAudios[i] then
+			return register(i)
+		end
+	end
+end
 
 debug.getregistry()["WebAudio"] = WebAudio
 
@@ -92,25 +130,39 @@ function WebAudio:IsDestroyed()
 	return self.destroyed
 end
 
---- Destroys a webaudio object and makes it the same (value wise) as WebAudio:getNULL()
+--- Destroys a webaudio object and makes it the same (value wise) as WebAudio.getNULL()
 -- @param boolean transmit If SERVER, should we transmit the destruction to the client? Default true
 function WebAudio:Destroy(transmit)
 	if self:IsDestroyed() then return end
 	if transmit == nil then transmit = true end
 
-	if CLIENT then
+	if CLIENT and self.bass then
 		self.bass:Stop()
 	elseif transmit then
-		self:AddModify(Modify.destroyed)
-		self:Transmit()
+		if self.AddModify then
+			-- Bandaid fix for garbage with autorefresh
+			-- 1. create stream
+			-- 2. wire_expression2_reload
+			-- 3. autorefresh this file
+			-- AddModify won't exist.
+			self:AddModify(Modify.destroyed)
+			self:Transmit()
+		end
 	end
 
 	local id = self.id
-	for k in next,self do
+	if WebAudios[id] then
+		-- Drop ID
+		WebAudioCounter = WebAudioCounter - 1
+		IsSequential = false
+
+		WebAudios[id] = nil
+	end
+
+	for k in next, self do
 		self[k] = nil
 	end
 	self.destroyed = true
-	WebAudios[id] = nil
 
 	return true
 end
@@ -176,13 +228,13 @@ local WebAudioStatic = {}
 -- For consistencies' sake, Static functions will be lowerCamelCase, while object / meta methods will be CamelCase.
 
 --- Returns an unusable WebAudio object that just has the destroyed field set to true.
--- @return webaudio The null stream
-function WebAudioStatic:getNULL()
+-- @return Webaudio The null stream
+function WebAudioStatic.getNULL()
 	return setmetatable({ destroyed = true }, WebAudio)
 end
 
 -- Bit lengths
-local ID_LEN = 13
+local ID_LEN = 10
 local MODIFY_LEN = 10
 local FFTSAMP_LEN = 8
 
@@ -191,38 +243,62 @@ WebAudio.MODIFY_LEN = MODIFY_LEN
 WebAudio.FFTSAMP_LEN = FFTSAMP_LEN
 
 --- Same as net.ReadUInt but doesn't need the bit length in order to adapt our code more easily.
--- @return number UInt13
-function WebAudioStatic:readID()
+-- @return number UInt10
+function WebAudioStatic.readID()
 	return net.ReadUInt(ID_LEN)
 end
 
+--- Faster version of WebAudio.getFromID( WebAudio.readID() )
+-- @return WebAudio? The stream or nil if it wasn't found
+function WebAudioStatic.readStream()
+	return WebAudios[ net.ReadUInt(ID_LEN) ]
+end
+
 --- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
--- @param number id UInt13 (max 8191 id)
-function WebAudioStatic:writeID(id)
+-- @param number id UInt10 (max id is 1023)
+function WebAudioStatic.writeID(id)
 	net.WriteUInt(id, ID_LEN)
+end
+
+--- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
+-- @param WebAudio stream The stream. This is the same as WebAudio.writeID( stream.id )
+function WebAudioStatic.writeStream(stream)
+	net.WriteUInt(stream.id, ID_LEN)
 end
 
 --- Reads a WebAudio Modify enum
 -- @return number UInt16
-function WebAudioStatic:readModify()
+function WebAudioStatic.readModify()
 	return net.ReadUInt(MODIFY_LEN)
 end
 
 --- Writes a WebAudio Modify enum
 -- @param number UInt16
-function WebAudioStatic:writeModify(modify)
+function WebAudioStatic.writeModify(modify)
 	net.WriteUInt(modify, MODIFY_LEN)
 end
 
-function WebAudioStatic:getFromID(id)
+function WebAudioStatic.getFromID(id)
 	return WebAudios[id]
 end
 
-function WebAudioStatic:getList()
+function WebAudioStatic.getList()
 	return WebAudios
 end
 
-function WebAudioStatic:getCountActive()
+local next = next
+
+--- Returns an iterator for the global table of all webaudio streams. Use this in a for in loop
+-- @return function Iterator, should be the same as ipairs / next
+-- @return table Global webaudio table. Same as WebAudio.getList()
+-- @return number Origin index, will always be nil (0 would be ipairs)
+function WebAudioStatic.getIterator()
+	return next, WebAudios, nil
+end
+
+--- Returns the number of currently active streams
+-- Cheaper than manually calling __len on the webaudio table as we keep track of it ourselves.
+function WebAudioStatic.getCountActive()
 	return WebAudioCounter
 end
 
@@ -231,35 +307,37 @@ local function isWebAudio(v)
 	return debug.getmetatable(v) == WebAudio
 end
 
-function WebAudioStatic:instanceOf(v)
-	return isWebAudio(v)
-end
+WebAudioStatic.instanceOf = isWebAudio
 
---- Reflection sorta
-function WebAudioStatic:getStatics()
+--- If you want to extend the static functions
+-- @return table The WebAudio static function / var table.
+function WebAudioStatic.getStatics()
 	return WebAudioStatic
 end
 
 --- Used internally. Should be called both server and client as it doesn't send any net messages to destroy the ids to the client.
-function WebAudioStatic:disassemble()
-	for k, stream in pairs( WebAudio:getList() ) do
+-- Called on WebAudio reload to stop all streams
+function WebAudioStatic.disassemble()
+	for k, stream in WebAudio.getIterator() do
 		stream:Destroy(not SERVER)
 	end
 end
 
--- For now just increment ids, I think it'll be fine this way.
-local current_id = 0
-local function getID()
-	current_id = current_id + 1
-	return current_id
-end
-
 local function createWebAudio(_, url, owner, bassobj, id)
-	assert( WebAudio:isWhitelistedURL(url), "'url' argument must be given a whitelisted url string." )
+	assert( WebAudio.isWhitelistedURL(url), "'url' argument must be given a whitelisted url string." )
 	-- assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." )
 	-- Commenting this out in case someone wants a webaudio object to be owned by the world or something.
 
 	local self = setmetatable({}, WebAudio)
+
+	self.id = id or allocID()
+	-- allocID will return nil if there's no slots left.
+	if id == nil and not self.id then
+		error("Reached maximum amount of concurrent WebAudio streams!")
+	end
+
+	self.url = url
+	self.owner = owner
 
 	-- Mutable --
 	self.playing = false
@@ -280,10 +358,6 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.looping = false
 	-- Mutable --
 
-	self.id = id or getID()
-	self.url = url
-	self.owner = owner
-
 	-- Net vars
 	self.needs_info = SERVER -- Whether this stream still needs information from the client.
 	self.length = -1
@@ -303,13 +377,12 @@ local function createWebAudio(_, url, owner, bassobj, id)
 		self.ignored = RecipientFilter()
 
 		net.Start("wa_create", true)
-			WebAudio:writeID(self.id)
+			WebAudio.writeID(self.id)
 			net.WriteString(self.url)
 			net.WriteEntity(self.owner)
 		self:Broadcast() -- Defined in wa_interface
 	end
 
-	WebAudioCounter = WebAudioCounter + 1
 	WebAudios[self.id] = self
 
 	return self
@@ -416,7 +489,7 @@ local function loadWhitelist(reloading)
 	end
 end
 
-local function isWhitelistedURL(self, url)
+local function isWhitelistedURL(url)
 	if not isstring(url) then return false end
 
 	local relative = url:match("^https?://(.*)")

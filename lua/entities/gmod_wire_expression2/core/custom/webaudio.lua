@@ -24,7 +24,7 @@ E2Lib.registerConstant( "WA_FFT_SAMPLES", 64 ) -- Default samples #
 E2Lib.registerConstant( "WA_FFT_DELAY", 80 ) -- Delay in ms
 
 
-registerType("webaudio", "xwa", WebAudio:getNULL(),
+registerType("webaudio", "xwa", WebAudio.getNULL(),
 	nil, -- TODO: webaudios in io?
 	nil,
 	function(ret)
@@ -32,10 +32,10 @@ registerType("webaudio", "xwa", WebAudio:getNULL(),
 		-- See https://github.com/wiremod/wire/blob/501dd9875ab1f6db37a795e1f9a946d382db4f1f/lua/entities/gmod_wire_expression2/core/entity.lua#L10
 
 		if not ret then return end
-		if not WebAudio:instanceOf(ret) then throw("Return value is neither nil nor a WebAudio object, but a %s!", type(ret)) end
+		if not WebAudio.instanceOf(ret) then throw("Return value is neither nil nor a WebAudio object, but a %s!", type(ret)) end
 	end,
 	function(v)
-		return WebAudio:instanceOf(v)
+		return WebAudio.instanceOf(v)
 	end
 )
 
@@ -119,7 +119,7 @@ e2function webaudio webAudio(string url)
 	local ply = self.player
 	checkPermissions(self)
 
-	if not WebAudio:isWhitelistedURL(url) then
+	if not WebAudio.isWhitelistedURL(url) then
 		error("This URL is not whitelisted on the server! See the default whitelist on github!")
 	end
 
@@ -153,7 +153,7 @@ e2function number webAudioCanCreate(string url)
 	return (
 		checkCooldown(ply, false)
 		and checkCounter(ply, false)
-		and WebAudio:isWhitelistedURL(url)
+		and WebAudio.isWhitelistedURL(url)
 	) and 1 or 0
 end
 
@@ -177,7 +177,7 @@ end
 
 __e2setcost(2)
 e2function webaudio nowebaudio()
-	return WebAudio:getNULL()
+	return WebAudio.getNULL()
 end
 
 __e2setcost(5)
@@ -312,7 +312,7 @@ end)
 registerCallback("destruct", function(self)
 	local owner, streams = self.player, self.data.webaudio_streams
 	local count = StreamCounter[owner] or 0
-	for k, stream in ipairs(streams) do
+	for k, stream in pairs(streams) do
 		if stream:IsValid() then
 			count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
 			stream:Destroy()
