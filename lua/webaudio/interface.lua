@@ -9,6 +9,7 @@ util.AddNetworkString("wa_ignore") -- To receive from the client to make sure to
 util.AddNetworkString("wa_enable") -- To receive from the client to make sure people with wa_enable 0 don't get WebAudio transmissions
 util.AddNetworkString("wa_info") -- To receive information about BASS / IGmodAudioChannel streams from clients that create them.
 util.AddNetworkString("wa_fft") -- Receive fft data.
+util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
 
 local WebAudio = Common.WebAudio
 
@@ -344,6 +345,11 @@ hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
 		WebAudio.unsubscribe(ply)
 	end
 end)
+
+local WAAutoLoad = GetConVar("wa_autoload_custom_wl")
+if (WAAutoLoad:GetBool()) then
+	RunConsoleCommand("wa_reload_whitelist")
+end
 
 local WebAudioStatic = WebAudio.getStatics()
 

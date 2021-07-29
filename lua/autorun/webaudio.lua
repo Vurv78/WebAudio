@@ -36,6 +36,7 @@ end
 -- SERVER
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
 local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1)
+local WAAutoLoad = CreateConVar("wa_autoload_custom_wl", "0", FCVAR_REPLICATED + FCVAR_ARCHIVE, "Auto loads the Custom Whitelist.", 0, 1)
 
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
@@ -460,15 +461,40 @@ local Whitelist = {
 	-- ytdl host. Requires 2d mode which we currently don't support.
 	simple [[youtubedl.mattjeanes.com]]
 }
-
+local OriginalWhitelist = table.Copy(Whitelist)
 local CustomWhitelist = false
+local LocalWhitelist = {}
+
+if SERVER then
+	local function sendCustomWhitelist(whitelist, ply)
+		net.Start("wa_sendcwhitelist")
+			net.WriteTable(whitelist)
+		if ply then
+			net.Send(ply)
+		else
+			net.Broadcast()
+		end
+	end
+	WebAudioStatic.sendCustomWhitelist = sendCustomWhitelist
+
+	hook.Add("PlayerInitialSpawn", "wa_player_whitelist", function(ply)
+		if ply:IsBot() then return end
+		sendCustomWhitelist(Whitelist, ply)
+	end)
+elseif CLIENT then
+	net.Receive("wa_sendcwhitelist", function(len)
+		Whitelist = net.ReadTable()
+		WebAudio.Common.Whitelist = Whitelist	
+	end)
+end
+
 
 local function loadWhitelist(reloading)
 	if file.Exists("webaudio_whitelist.txt", "DATA") then
 		CustomWhitelist = true
 
 		local dat = file.Read("webaudio_whitelist.txt", "DATA")
-		local new_list, ind = {}, 1
+		local new_list, ind = {}, 0
 
 		for line in dat:gmatch("[^\r\n]+") do
 			local type, match = line:match("(%w+)%s+(.*)")
@@ -483,19 +509,21 @@ local function loadWhitelist(reloading)
 		end
 
 		notify("Whitelist from webaudio_whitelist.txt found and parsed with %d entries!", ind)
-		Whitelist = new_list
+		if SERVER then
+			Whitelist = new_list
+			WebAudio.Common.Whitelist = new_list
+			WebAudioStatic.sendCustomWhitelist(Whitelist)
+		else
+			LocalWhitelist = new_list
+		end
+		WebAudio.Common.CustomWhitelist = true
 	elseif reloading then
 		notify("Couldn't find your whitelist file! %s", CLIENT and "Make sure to run this on the server if you want to reload the server's whitelist!" or "")
 	end
 end
 
-local function isWhitelistedURL(url)
-	if not isstring(url) then return false end
-
-	local relative = url:match("^https?://(.*)")
-	if not relative then return false end
-
-	for _, data in ipairs(Whitelist) do
+local function checkWhitelist(wl, relative)
+	for _, data in ipairs(wl) do
 		local match, is_pattern = data[1], data[2]
 
 		local haystack = is_pattern and relative or (relative:match("(.-)/.*") or relative)
@@ -505,6 +533,23 @@ local function isWhitelistedURL(url)
 	end
 
 	return false
+end
+
+local function isWhitelistedURL(url)
+	if not isstring(url) then return false end
+
+	local relative = url:match("^https?://(.*)")
+	if not relative then return false end	
+
+	if CLIENT and CustomWhitelist then
+		local isWL = checkWhitelist(LocalWhitelist, relative)
+		if not isWhite then
+			warn("%s failed because it is not in the local Whitelist!",  url)
+		end
+		return isWL
+	end
+
+	return checkWhitelist(Whitelist, relative)
 end
 
 concommand.Add("wa_reload_whitelist", loadWhitelist)
@@ -534,7 +579,8 @@ WebAudio.Common = {
 	-- Whitelist
 	loadWhitelist = loadWhitelist,
 	CustomWhitelist = CustomWhitelist, -- If we're using a user supplied whitelist.
-	Whitelist = Whitelist
+	Whitelist = Whitelist,
+	OriginalWhitelist = OriginalWhitelist
 }
 
 AddCSLuaFile("webaudio/receiver.lua")
