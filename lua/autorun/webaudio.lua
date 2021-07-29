@@ -36,7 +36,7 @@ end
 -- SERVER
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
 local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1)
-local WAAutoLoad = CreateConVar("wa_autoload_custom_wl", "0", FCVAR_REPLICATED + FCVAR_ARCHIVE, "Auto loads the Custom Whitelist.", 0, 1)
+CreateConVar("wa_autoload_custom_wl", "0", FCVAR_REPLICATED + FCVAR_ARCHIVE, "Auto loads the Custom Whitelist.", 0, 1)
 
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
@@ -484,7 +484,7 @@ if SERVER then
 elseif CLIENT then
 	net.Receive("wa_sendcwhitelist", function(len)
 		Whitelist = net.ReadTable()
-		WebAudio.Common.Whitelist = Whitelist	
+		WebAudio.Common.Whitelist = Whitelist
 	end)
 end
 
@@ -539,7 +539,7 @@ local function isWhitelistedURL(url)
 	if not isstring(url) then return false end
 
 	local relative = url:match("^https?://(.*)")
-	if not relative then return false end	
+	if not relative then return false end
 
 	if CLIENT and CustomWhitelist then
 		local isWL = checkWhitelist(LocalWhitelist, relative)
