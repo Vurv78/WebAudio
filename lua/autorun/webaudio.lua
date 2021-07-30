@@ -541,11 +541,7 @@ local function isWhitelistedURL(url)
 	if not relative then return false end
 
 	if CLIENT and CustomWhitelist then
-		local isWL = checkWhitelist(LocalWhitelist, relative)
-		if not isWhite then
-			warn("%s failed because it is not in the local Whitelist!",  url)
-		end
-		return isWL
+		return checkWhitelist(LocalWhitelist, relative)
 	end
 
 	return checkWhitelist(Whitelist, relative)
