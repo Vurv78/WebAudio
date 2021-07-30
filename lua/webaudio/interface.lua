@@ -346,11 +346,6 @@ hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
 	end
 end)
 
-local WAAutoLoad = GetConVar("wa_autoload_custom_wl")
-if (WAAutoLoad:GetBool()) then
-	RunConsoleCommand("wa_reload_whitelist")
-end
-
 local WebAudioStatic = WebAudio.getStatics()
 
 --- Unsubscribe a player from receiving WebAudio net messages

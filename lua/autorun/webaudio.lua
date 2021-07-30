@@ -36,7 +36,6 @@ end
 -- SERVER
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
 local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1)
-CreateConVar("wa_autoload_custom_wl", "0", FCVAR_REPLICATED + FCVAR_ARCHIVE, "Auto loads the Custom Whitelist.", 0, 1)
 
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
@@ -552,6 +551,7 @@ local function isWhitelistedURL(url)
 	return checkWhitelist(Whitelist, relative)
 end
 
+loadWhitelist()
 concommand.Add("wa_reload_whitelist", loadWhitelist)
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 
