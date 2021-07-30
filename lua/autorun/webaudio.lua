@@ -461,21 +461,48 @@ local Whitelist = {
 	simple [[youtubedl.mattjeanes.com]]
 }
 
+local OriginalWhitelist = table.Copy(Whitelist)
 local CustomWhitelist = false
+local LocalWhitelist = {}
+
+if SERVER then
+	util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
+	local function sendCustomWhitelist(whitelist, ply)
+		net.Start("wa_sendcwhitelist")
+			net.WriteTable(whitelist)
+		if ply then
+			net.Send(ply)
+		else
+			net.Broadcast()
+		end
+	end
+	WebAudioStatic.sendCustomWhitelist = sendCustomWhitelist
+
+	hook.Add("PlayerInitialSpawn", "wa_player_whitelist", function(ply)
+		if ply:IsBot() then return end
+		sendCustomWhitelist(Whitelist, ply)
+	end)
+elseif CLIENT then
+	net.Receive("wa_sendcwhitelist", function(len)
+		Whitelist = net.ReadTable()
+		WebAudio.Common.Whitelist = Whitelist
+	end)
+end
+
 
 local function loadWhitelist(reloading)
 	if file.Exists("webaudio_whitelist.txt", "DATA") then
 		CustomWhitelist = true
 
 		local dat = file.Read("webaudio_whitelist.txt", "DATA")
-		local new_list, ind = {}, 1
+		local new_list, ind = {}, 0
 
 		for line in dat:gmatch("[^\r\n]+") do
 			local type, match = line:match("(%w+)%s+(.*)")
 			local reg = registers[type]
 			if reg then
-				new_list[ind] = reg(match)
 				ind = ind + 1
+				new_list[ind] = reg(match)
 			elseif type ~= nil then
 				-- Make sure type isn't nil so we ignore empty lines
 				warn("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
@@ -483,19 +510,21 @@ local function loadWhitelist(reloading)
 		end
 
 		notify("Whitelist from webaudio_whitelist.txt found and parsed with %d entries!", ind)
-		Whitelist = new_list
+		if SERVER then
+			Whitelist = new_list
+			WebAudio.Common.Whitelist = new_list
+			WebAudio.sendCustomWhitelist(Whitelist)
+		else
+			LocalWhitelist = new_list
+		end
+		WebAudio.Common.CustomWhitelist = true
 	elseif reloading then
 		notify("Couldn't find your whitelist file! %s", CLIENT and "Make sure to run this on the server if you want to reload the server's whitelist!" or "")
 	end
 end
 
-local function isWhitelistedURL(url)
-	if not isstring(url) then return false end
-
-	local relative = url:match("^https?://(.*)")
-	if not relative then return false end
-
-	for _, data in ipairs(Whitelist) do
+local function checkWhitelist(wl, relative)
+	for _, data in ipairs(wl) do
 		local match, is_pattern = data[1], data[2]
 
 		local haystack = is_pattern and relative or (relative:match("(.-)/.*") or relative)
@@ -505,6 +534,19 @@ local function isWhitelistedURL(url)
 	end
 
 	return false
+end
+
+local function isWhitelistedURL(url)
+	if not isstring(url) then return false end
+
+	local relative = url:match("^https?://(.*)")
+	if not relative then return false end
+
+	if CLIENT and CustomWhitelist then
+		return checkWhitelist(LocalWhitelist, relative)
+	end
+
+	return checkWhitelist(Whitelist, relative)
 end
 
 concommand.Add("wa_reload_whitelist", loadWhitelist)
@@ -534,8 +576,11 @@ WebAudio.Common = {
 	-- Whitelist
 	loadWhitelist = loadWhitelist,
 	CustomWhitelist = CustomWhitelist, -- If we're using a user supplied whitelist.
-	Whitelist = Whitelist
+	Whitelist = Whitelist,
+	OriginalWhitelist = OriginalWhitelist
 }
+
+loadWhitelist()
 
 AddCSLuaFile("webaudio/receiver.lua")
 
