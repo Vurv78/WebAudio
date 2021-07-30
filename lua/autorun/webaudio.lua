@@ -474,7 +474,7 @@ if SERVER then
 			net.Broadcast()
 		end
 	end
-	WebAudio.sendCustomWhitelist = sendCustomWhitelist
+	WebAudioStatic.sendCustomWhitelist = sendCustomWhitelist
 
 	hook.Add("PlayerInitialSpawn", "wa_player_whitelist", function(ply)
 		if ply:IsBot() then return end
