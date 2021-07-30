@@ -460,11 +460,13 @@ local Whitelist = {
 	-- ytdl host. Requires 2d mode which we currently don't support.
 	simple [[youtubedl.mattjeanes.com]]
 }
+
 local OriginalWhitelist = table.Copy(Whitelist)
 local CustomWhitelist = false
 local LocalWhitelist = {}
 
 if SERVER then
+	util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
 	local function sendCustomWhitelist(whitelist, ply)
 		net.Start("wa_sendcwhitelist")
 			net.WriteTable(whitelist)
@@ -499,8 +501,8 @@ local function loadWhitelist(reloading)
 			local type, match = line:match("(%w+)%s+(.*)")
 			local reg = registers[type]
 			if reg then
-				new_list[ind] = reg(match)
 				ind = ind + 1
+				new_list[ind] = reg(match)
 			elseif type ~= nil then
 				-- Make sure type isn't nil so we ignore empty lines
 				warn("Invalid entry type found [\"", type, "\"] in webaudio_whitelist\n")
@@ -547,7 +549,6 @@ local function isWhitelistedURL(url)
 	return checkWhitelist(Whitelist, relative)
 end
 
-loadWhitelist()
 concommand.Add("wa_reload_whitelist", loadWhitelist)
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 
@@ -578,6 +579,8 @@ WebAudio.Common = {
 	Whitelist = Whitelist,
 	OriginalWhitelist = OriginalWhitelist
 }
+
+loadWhitelist()
 
 AddCSLuaFile("webaudio/receiver.lua")
 

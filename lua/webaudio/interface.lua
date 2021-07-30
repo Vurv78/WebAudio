@@ -3,13 +3,13 @@
 local Common = _G.WebAudio.Common
 local Modify = Common.Modify
 
+--- Object networking
 util.AddNetworkString("wa_create") -- To send to the client to create a Clientside WebAudio struct
 util.AddNetworkString("wa_change") -- To send to the client to modify Client WebAudio structs
 util.AddNetworkString("wa_ignore") -- To receive from the client to make sure to ignore players to send to in WebAudio transmissions
 util.AddNetworkString("wa_enable") -- To receive from the client to make sure people with wa_enable 0 don't get WebAudio transmissions
 util.AddNetworkString("wa_info") -- To receive information about BASS / IGmodAudioChannel streams from clients that create them.
 util.AddNetworkString("wa_fft") -- Receive fft data.
-util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
 
 local WebAudio = Common.WebAudio
 
