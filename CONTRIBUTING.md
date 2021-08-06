@@ -17,7 +17,8 @@ Wanna add something to the addon? Here's some rules and steps for doing so.
    3. Avoiding use of globals, etc..
 
 ## Recommendations
-Use glua enhanced for vscode. It's super useful and will help you with the syntax highlighting and ide sort of feel.
+Use [Glua Enhanced](https://marketplace.visualstudio.com/items?itemName=venner.vscode-glua-enhanced) (Autocompletion, Syntax Highlighting, etc..)  
+And [vscode-glualint](https://marketplace.visualstudio.com/items?itemName=goz3rr.vscode-glualint) (VSCode version of the linter)
 
 ## Note
 Changes may not be accepted depending on whether:
