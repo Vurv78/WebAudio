@@ -43,6 +43,14 @@ local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest
 local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
 local WAFFTEnabled = CreateConVar("wa_fft_enable", "1", FCVAR_ARCHIVE, "Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight.", 0, 1)
 
+-- CLIENT
+
+-- 0 is no prints, 1 is warnings/errors, 2 is additional logging
+local WAVerbosity
+if CLIENT then
+	WAVerbosity = CreateConVar("wa_verbosity", "1", FCVAR_ARCHIVE, "Verbosity of WebAudio information & warnings printed to your console. 2 is warnings & stream logging, 1 is only warnings (default), 0 is nothing (Not recommended).", 0, 2)
+end
+
 local Black = Color(0, 0, 0)
 local Color_Warn = Color(243, 71, 41)
 local Color_Notify = Color(65, 172, 235)
@@ -564,14 +572,20 @@ WebAudio.Common = {
 	hasModifyFlag = hasModifyFlag,
 	getFlags = getFlags,
 
-	-- Convars
+	--- Convars
+
+	-- Server
 	WAAdminOnly = WAAdminOnly,
 	WAMaxStreamsPerUser = WAMaxStreamsPerUser,
 
+	-- Shared
 	WAEnabled = WAEnabled,
 	WAMaxVolume = WAMaxVolume,
 	WAMaxRadius = WAMaxRadius,
 	WAFFTEnabled = WAFFTEnabled,
+
+	-- Client
+	WAVerbosity = WAVerbosity,
 
 	-- Whitelist
 	loadWhitelist = loadWhitelist,

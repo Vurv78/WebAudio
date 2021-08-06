@@ -1,13 +1,14 @@
 -- This file assumes ``autorun/webaudio.lua`` ran right before it.
 
 local Common = WebAudio.Common
-local warn, notify = Common.warn, Common.notify
+local wa_warn, wa_notify = Common.warn, Common.notify
 
 local math_min = math.min
 
 -- Convars
 local Enabled, FFTEnabled = Common.WAEnabled, Common.WAFFTEnabled
 local MaxVolume, MaxRadius = Common.WAMaxVolume, Common.WAMaxRadius
+local Verbosity = Common.WAVerbosity
 
 local AwaitingChanges = {}
 local updateObject -- To be declared below
@@ -66,10 +67,27 @@ end)
 
 net.Receive("wa_create", function(len)
 	local id, url, owner = WebAudio.readID(), net.ReadString(), net.ReadEntity()
+	local verbosity = Verbosity:GetInt()
+
+	local function warn() end
+	local function notify() end
+	if verbosity >= 2 then
+		-- Very verbose (old default)
+		warn = wa_warn
+		notify = wa_notify
+	elseif verbosity >= 1 then
+		-- Warnings only (new default)
+		warn = wa_warn
+	end
 
 	if not Enabled:GetBool() then
-		-- Shouldn't happen anymore
-		return notify("%s(%s) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!", owner:Nick(), owner:SteamID64() or "multirun", url)
+		-- Shouldn't happen anymore as net messages won't send to users who have webaudio disabled.
+		return notify(
+			"%s(%s) attempted to create a WebAudio object with url [\"%s\"], but you have WebAudio disabled!",
+			owner:Nick(),
+			owner:SteamID64() or "multirun",
+			url
+		)
 	end
 
 	if not WebAudio.isWhitelistedURL(url) then
@@ -78,16 +96,21 @@ net.Receive("wa_create", function(len)
 
 	local is_stream_owner = owner == LocalPlayer()
 
-	-- If a stream failed in one of several ways
-	-- Really ugly syntax
-	local streamFailed = is_stream_owner and function()
-		net.Start("wa_info", true)
-			WebAudio.writeID(id)
-			net.WriteBool(true)
-		net.SendToServer()
-	end or function() end
+	-- If a stream failed to the point where it wouldn't be able to function for anyone,
+	-- Send feedback to the server to destroy the object.
+	local function streamFailed() end
+
+	if is_stream_owner then
+		function streamFailed()
+			net.Start("wa_info", true)
+				WebAudio.writeID(id)
+				net.WriteBool(true)
+			net.SendToServer()
+		end
+	end
 
 	notify("User %s(%s) created WebAudio object with url [\"%s\"]", owner:Nick(), owner:SteamID64() or "multirun", url)
+
 	sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
 		if errid then
 			streamFailed()

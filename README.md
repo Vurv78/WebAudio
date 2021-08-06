@@ -37,6 +37,7 @@ See CONTRIBUTING.md
 | SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
 | SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
 | SHARED | wa_fft_enable | 1             | Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight       |
+| CLIENT | wa_verbosity  | 1             | Verbosity of console notifications. 2 => URL/Logging + Extra Info, 1 => Only warnings/errors, 0 => Nothing (Avoid this)    |
 
 ## Concommands
 | Realm  | Name                | Description                                                                                                    |
