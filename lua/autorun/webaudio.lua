@@ -446,7 +446,7 @@ local Whitelist = {
 	-- Dropbox
 	simple [[dl.dropboxusercontent.com]],
 	pattern [[%w+%.dl%.dropboxusercontent%.com/(.+)]],
-	simple [[www.dropbox.com]],
+	simple [[dropbox.com]],
 	simple [[dl.dropbox.com]],
 
 	-- Github
