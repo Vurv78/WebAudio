@@ -477,7 +477,9 @@ if SERVER then
 	util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
 	local function sendCustomWhitelist(whitelist, ply)
 		net.Start("wa_sendcwhitelist")
-			net.WriteTable(whitelist)
+			if whitelist then
+				net.WriteTable(whitelist)
+			end
 		if ply then
 			net.Send(ply)
 		else
@@ -492,8 +494,13 @@ if SERVER then
 	end)
 elseif CLIENT then
 	net.Receive("wa_sendcwhitelist", function(len)
-		Whitelist = net.ReadTable()
-		WebAudio.Common.Whitelist = Whitelist
+		if len == 0 then
+			Whitelist = OriginalWhitelist
+			WebAudio.Common.Whitelist = OriginalWhitelist
+		else
+			Whitelist = net.ReadTable()
+			WebAudio.Common.Whitelist = Whitelist
+		end
 	end)
 end
 
@@ -526,9 +533,12 @@ local function loadWhitelist(reloading)
 			LocalWhitelist = new_list
 		end
 		WebAudio.Common.CustomWhitelist = true
+		return true
 	elseif reloading then
 		notify("Couldn't find your whitelist file! %s", CLIENT and "Make sure to run this on the server if you want to reload the server's whitelist!" or "")
+		return false
 	end
+	return false
 end
 
 local function checkWhitelist(wl, relative)
@@ -557,7 +567,15 @@ local function isWhitelistedURL(url)
 	return checkWhitelist(Whitelist, relative)
 end
 
-concommand.Add("wa_reload_whitelist", loadWhitelist)
+concommand.Add("wa_reload_whitelist", function()
+	if not loadWhitelist() then
+		Whitelist = OriginalWhitelist
+		CustomWhitelist = false
+		WebAudio.Common.CustomWhitelist = false
+		WebAudio.sendCustomWhitelist()
+	end
+end)
+
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 
 WebAudio.Common = {

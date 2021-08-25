@@ -106,7 +106,7 @@ end
 
 local function checkCounter(ply, use)
 	local count = StreamCounter[ply] or 0
-	if (count + 1) < MaxStreams:GetInt() then
+	if count < MaxStreams:GetInt() then
 		if use then
 			StreamCounter[ply] = count + 1
 		end
@@ -120,7 +120,11 @@ e2function webaudio webAudio(string url)
 	checkPermissions(self)
 
 	if not WebAudio.isWhitelistedURL(url) then
-		error("This URL is not whitelisted on the server! See the default whitelist on github!")
+		if WebAudio.Common.CustomWhitelist then
+			error("This URL is not whitelisted! The server has a custom whitelist.")
+		else
+			error("This URL is not whitelisted! See github.com/Vurv78/WebAudio/blob/main/WHITELIST.md")
+		end
 	end
 
 	-- Creation Time Quota
