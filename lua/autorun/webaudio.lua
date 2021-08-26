@@ -576,6 +576,27 @@ concommand.Add("wa_reload_whitelist", function()
 	end
 end)
 
+concommand.Add("wa_list", function()
+	local stream_list, n = {}, 0
+	for id, stream in WebAudio.getIterator() do
+		local owner = stream.owner
+		if IsValid(owner) then
+			n = n + 1
+			stream_list[n] = string.format("[%d] %s(%s): '%s'", stream.id, owner:GetName(), owner:SteamID64() or "multirun", stream.url)
+		end
+	end
+	MsgC( White, "---------> WebAudio List <---------\n" )
+	if n == 0 then
+		MsgC( White, "None!\n")
+	else
+		MsgC( White, table.concat(stream_list, '\n'), "\n" )
+	end
+end)
+
+concommand.Add("wa_help", function()
+	MsgC( White, "You can get help & report issues on the Github: ", Color_Notify, "https://github.com/Vurv78/WebAudio", White, "\n" )
+end)
+
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 
 WebAudio.Common = {

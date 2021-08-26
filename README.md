@@ -44,6 +44,8 @@ See CONTRIBUTING.md
 |--------|---------------------|----------------------------------------------------------------------------------------------------------------|
 | CLIENT | wa_purge            | Purges all currently running WebAudio streams and does not receive any further net updates with their objects. |
 | SHARED | wa_reload_whitelist | Refreshes your whitelist located at data/webaudio_whitelist.txt                                                |
+| SHARED | wa_list             | Prints a list of currently playing WebAudio streams (As long as their owner IsValid) with their url, id & owner|
+| SHARED | wa_help             | Prints the link to the github to your console                                                                  |
 
 ## Functions
 
