@@ -180,6 +180,7 @@ end
 -- Not perfect for the clients and there will be desync if you pause and unpause constantly.
 -- @return number Elapsed time
 function WebAudio:GetTimeElapsed()
+	if self:IsDestroyed() then return -1 end
 	return self.stopwatch:GetTime()
 end
 
@@ -216,6 +217,7 @@ end
 --- Returns the state of the WebAudio object
 -- @return number State, See STOPWATCH_* Enums
 function WebAudio:GetState()
+	if self:IsDestroyed() then return STOPWATCH_STOPPED end
 	return self.stopwatch:GetState()
 end
 

@@ -26,8 +26,12 @@ E2Lib.registerConstant( "WA_FFT_DELAY", 80 ) -- Delay in ms
 
 
 registerType("webaudio", "xwa", WebAudio.getNULL(),
-	nil, -- TODO: webaudios in io?
-	nil,
+	function(self, input)
+		return input
+	end,
+	function(self, output)
+		return output
+	end,
 	function(ret)
 		-- For some reason we don't throw an error here.
 		-- See https://github.com/wiremod/wire/blob/501dd9875ab1f6db37a795e1f9a946d382db4f1f/lua/entities/gmod_wire_expression2/core/entity.lua#L10
@@ -45,6 +49,24 @@ local function registerStream(self, url, owner)
 	table.insert(self.data.webaudio_streams, stream)
 	return stream
 end
+
+e2function string toString(webaudio stream)
+	if IsValid(stream) then
+		return string.format("WebAudio [%d]", stream.id)
+	else
+		return "WebAudio [null]"
+	end
+end
+
+e2function string webaudio:toString() = e2function string toString(webaudio stream)
+
+WireLib.registerDebuggerFormat("WEBAUDIO", function(stream)
+	if IsValid(stream) then
+		return string.format( "WebAudio [Id: %d, volume: %d%%, time: %.02f/%d]", stream.id, stream.volume * 100, stream.stopwatch:GetTime(), stream.length )
+	else
+		return "WebAudio [null]"
+	end
+end)
 
 __e2setcost(1)
 e2function webaudio operator=(webaudio lhs, webaudio rhs) -- Wa = webAudio("...") (Rip Coroutine Core comments)
@@ -294,9 +316,10 @@ end
 __e2setcost(15)
 e2function void webaudio:destroy()
 	-- No limit here because they'd already have been limited by the creation burst.
+	local owner = this.owner or self.player
+	-- Prevent people destroying others streams and getting more slots? Would be weird.
 	if this:Destroy() then
-		local ply = self.player
-		StreamCounter[ply] = StreamCounter[ply] - 1
+		StreamCounter[owner] = StreamCounter[owner] - 1
 	end
 end
 
