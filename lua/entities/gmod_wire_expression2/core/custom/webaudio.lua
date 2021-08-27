@@ -13,9 +13,10 @@ local Common = WebAudio.Common
 local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Common.WAFFTEnabled
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
-local StreamCounter = WireLib.RegisterPlayerTable() -- Prevent having more streams than wa_max_streams
-local CreationTimeTracker = WireLib.RegisterPlayerTable() -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
-local LastTransmissions = WireLib.RegisterPlayerTable() -- In order to prevent too many updates at once.
+local StreamCounter = WireLib.RegisterPlayerTable()
+
+local CREATE_REGEN = 0.3 -- 300ms to regenerate a stream
+local NET_REGEN = 0.1 -- 100ms to regenerate net messages
 
 E2Lib.registerConstant( "CHANNEL_STOPPED", STOPWATCH_STOPPED )
 E2Lib.registerConstant( "CHANNEL_PLAYING", STOPWATCH_PLAYING )
@@ -32,11 +33,11 @@ registerType("webaudio", "xwa", WebAudio.getNULL(),
 		-- See https://github.com/wiremod/wire/blob/501dd9875ab1f6db37a795e1f9a946d382db4f1f/lua/entities/gmod_wire_expression2/core/entity.lua#L10
 
 		if not ret then return end
-		if not WebAudio.instanceOf(ret) then throw("Return value is neither nil nor a WebAudio object, but a %s!", type(ret)) end
+		if not WebAudio.instanceOf(ret) then
+			error("Return value is neither nil nor a WebAudio object, but a %s!", type(ret))
+		end
 	end,
-	function(v)
-		return WebAudio.instanceOf(v)
-	end
+	WebAudio.instanceOf
 )
 
 local function registerStream(self, url, owner)
@@ -62,7 +63,7 @@ e2function number operator!=(webaudio lhs, webaudio rhs) -- if(Wa!=Wa)
 end
 
 e2function number operator_is(webaudio wa)
-	return wa and 1 or 0
+	return IsValid(wa) and 1 or 0
 end
 
 --- Checks if a player / chip has permissions to use webaudio.
@@ -85,24 +86,77 @@ local function checkPermissions(self, ent)
 	end
 end
 
-local function canTransmit(ply)
-	local now = SysTime()
-	local last = LastTransmissions[ply] or 0
-	if now - last > 0.1 then
-		-- Every player has a 100ms delay between net transmissions
-		LastTransmissions[ply] = now
+--- Generic Burst limit until wiremod gets its own like Starfall.
+-- Also acts as a limit on the number of something.
+local Burst = setmetatable({}, {
+	__call = function(self, max, regen_time)
+		return setmetatable({
+			max = max, -- Will start full.
+
+			regen = regen_time,
+			tracker = WireLib.RegisterPlayerTable()
+		}, self)
+	end
+})
+Burst.__index = Burst
+
+function Burst:get(ply)
+	local data = self.tracker[ply]
+	if data then
+		return data.stock
+	else
+		return self.max
+	end
+end
+
+function Burst:check(ply)
+	local data = self.tracker[ply]
+	if data then
+		local now = CurTime()
+		local last = data.last
+
+		local stock = data.stock
+		if stock == 0 then
+			stock = math.min( math.floor( (now - last) / self.regen), self.max)
+			return stock > 0
+		else
+			return true
+		end
+	else
 		return true
 	end
 end
 
-local function checkCooldown(ply, use)
-	local now, last = SysTime(), CreationTimeTracker[ply] or 0
-	if (now - last) < 0.5 then return false end
-	if use then
-		CreationTimeTracker[ply] = now
+function Burst:use(ply)
+	local data = self.tracker[ply]
+	if data then
+		local now = CurTime()
+		local last = data.last
+
+		local stock = math.min( data.stock + math.floor( (now - last) / self.regen), self.max )
+
+		if stock > 0 then
+			data.stock = stock - 1
+			data.last = CurTime()
+			return true
+		else
+			return false
+		end
+	else
+		self.tracker[ply] = {
+			stock = self.max - 1, -- stockpile
+			last = CurTime()
+		}
+		return true
 	end
-	return true
 end
+
+local CreationBurst = Burst( MaxStreams:GetInt(), CREATE_REGEN ) -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
+local NetBurst = Burst( 10, NET_REGEN ) -- In order to prevent too many updates at once.
+
+cvars.AddChangeCallback("wa_stream_max", function(_cvar_name, _old, new)
+	CreationBurst.max = new
+end)
 
 local function checkCounter(ply, use)
 	local count = StreamCounter[ply] or 0
@@ -112,6 +166,7 @@ local function checkCounter(ply, use)
 		end
 		return true
 	end
+	return false
 end
 
 __e2setcost(50)
@@ -128,7 +183,7 @@ e2function webaudio webAudio(string url)
 	end
 
 	-- Creation Time Quota
-	if not checkCooldown(ply, true) then
+	if not CreationBurst:use(ply) then
 		error("You are creating WebAudios too fast. Check webAudioCanCreate before calling!")
 	end
 
@@ -145,7 +200,7 @@ e2function number webAudioCanCreate()
 	local ply = self.player
 
 	return (
-		checkCooldown(ply, false)
+		CreationBurst:check(ply)
 		and checkCounter(ply, false)
 	) and 1 or 0
 end
@@ -155,7 +210,7 @@ e2function number webAudioCanCreate(string url)
 	local ply = self.player
 
 	return (
-		checkCooldown(ply, false)
+		CreationBurst:check(ply)
 		and checkCounter(ply, false)
 		and WebAudio.isWhitelistedURL(url)
 	) and 1 or 0
@@ -193,14 +248,14 @@ end
 __e2setcost(15)
 e2function number webaudio:play()
 	checkPermissions(self)
-	if not canTransmit(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return 0 end
 
 	return this:Play() and 1 or 0
 end
 
 e2function number webaudio:pause()
 	checkPermissions(self)
-	if not canTransmit(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return 0 end
 
 	return this:Pause() and 1 or 0
 end
@@ -238,6 +293,7 @@ end
 
 __e2setcost(15)
 e2function void webaudio:destroy()
+	-- No limit here because they'd already have been limited by the creation burst.
 	if this:Destroy() then
 		local ply = self.player
 		StreamCounter[ply] = StreamCounter[ply] - 1
@@ -248,7 +304,7 @@ end
 -- @return number Whether the WebAudio object successfully transmitted. Returns 0 if you are hitting quota.
 e2function number webaudio:update()
 	checkPermissions(self)
-	if not canTransmit(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return 0 end
 
 	return this:Transmit() and 1 or 0
 end
