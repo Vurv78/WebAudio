@@ -1,6 +1,3 @@
-
-
-
 E2Lib.RegisterExtension("webaudio", true, "Adds 3D Bass/IGmodAudioChannel web streaming to E2.")
 
 local WebAudio = WebAudio
