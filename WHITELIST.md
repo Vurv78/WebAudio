@@ -28,3 +28,4 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | Gitlab | ✔️ | gitlab.com | Gitlab content | 🚧 |
 | Onedrive | ➖ | onedrive.live.com | Onedrive content | 🚧 |
 | Mattjeanes ytdl | ❔ | youtubedl.mattjeanes.com | Ytdl host by mattjeanes https://github.com/MattJeanes/YouTubeDL | 🚧 |
+| MyInstants | ✔️ | myinstants.com | Sound effects | https://myinstants.com/media/sounds/taco-bell-bong-sfx.mp3 |

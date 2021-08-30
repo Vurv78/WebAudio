@@ -468,7 +468,10 @@ local Whitelist = {
 	simple [[onedrive.live.com/redir]],
 
 	-- ytdl host. Requires 2d mode which we currently don't support.
-	simple [[youtubedl.mattjeanes.com]]
+	simple [[youtubedl.mattjeanes.com]],
+
+	-- MyInstants
+	simple [[myinstants.com]]
 }
 
 local OriginalWhitelist = table.Copy(Whitelist)
