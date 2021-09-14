@@ -412,21 +412,24 @@ local function pattern(str) return { str, true } end
 local function simple(str) return { string.PatternSafe(str), false } end
 local registers = { ["pattern"] = pattern, ["simple"] = simple }
 
--- Inspired / Taken from StarfallEx & Metastruct/gurl
--- No blacklist for now, just don't whitelist anything that has weird other routes.
+--[[
+	Inspired / Taken from StarfallEx & Metastruct/gurl
+	No blacklist for now, just don't whitelist anything that has any possible redir routes.
 
---- Note #1 (For PR Help)
--- Sites cannot track users / do any scummy shit with your data unless they're a massive corporation that you really can't avoid anyways.
--- So don't think about PRing your own website
--- Also these have to do with audio since this is an audio based addon.
+	## Guidelines
+	Sites cannot track users / do any scummy shit with your data unless they're a massive corporation that you really can't avoid anyways.
+	So don't think about PRing your own website
+	Also these have to do with audio since this is an audio based addon.
 
---- Note #2
--- Create a file called webaudio_whitelist.txt in your data folder to overwrite this, works on the server box or on your client.
--- Example file might look like this:
--- ```
--- pattern %w+%.sndcdn%.com
--- simple translate.google.com
--- ```
+	## Custom whitelist
+		Create a file called webaudio_whitelist.txt in your data folder to overwrite this, works on the server box or on your client.
+		Example file might look like this:
+		```
+		pattern %w+%.sndcdn%.com
+		simple translate.google.com
+		```
+]]--
+
 local Whitelist = {
 	-- Soundcloud
 	pattern [[%w+%.sndcdn%.com/.+]],
@@ -471,7 +474,10 @@ local Whitelist = {
 	simple [[youtubedl.mattjeanes.com]],
 
 	-- MyInstants
-	simple [[myinstants.com]]
+	simple [[myinstants.com]],
+
+	-- TTS like moonbase alpha's
+	simple [[tts.cyzon.us]]
 }
 
 local OriginalWhitelist = table.Copy(Whitelist)
@@ -561,8 +567,9 @@ end
 
 local function isWhitelistedURL(url)
 	if not isstring(url) then return false end
+	url = url:Trim()
 
-	local relative = url:match("^https?://(.*)")
+	local relative = url:match("^https?://www%.(.*)") or url:match("^https?://(.*)")
 	if not relative then return false end
 
 	if CLIENT and CustomWhitelist then

@@ -29,3 +29,4 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | Onedrive | ➖ | onedrive.live.com | Onedrive content | 🚧 |
 | Mattjeanes ytdl | ❔ | youtubedl.mattjeanes.com | Ytdl host by mattjeanes https://github.com/MattJeanes/YouTubeDL | 🚧 |
 | MyInstants | ✔️ | myinstants.com | Sound effects | https://myinstants.com/media/sounds/taco-bell-bong-sfx.mp3 |
+| Moonbase Alpha TTS | ✔️ | tts.cyzon.us | TTS almost identical to moonbase alpha's | https://tts.cyzon.us/tts?text=bruh |
