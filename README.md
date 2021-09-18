@@ -51,7 +51,7 @@ See CONTRIBUTING.md
 
 ``webaudio webAudio(string url)``  
 Returns a **WebAudio** object of that URL as long as it is whitelisted by the server.  
-Has a 500 ms cooldown between calls. If you can't create a webAudio object, it will error, so check ``webAudioCanCreate`` before calling this!
+Has a burst cooldown between calls. If you can't create a webAudio object, it'll error, so check ``webAudioCanCreate`` before calling this! You can create all of your streams in one tick but will have to wait 300ms for each slot to regenerate.
 
 ``number webAudiosLeft()``  
 Returns how many WebAudios you can create.
