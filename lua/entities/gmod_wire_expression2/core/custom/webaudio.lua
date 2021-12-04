@@ -89,19 +89,19 @@ end
 -- @param table self 'self' from E2Functions.
 -- @param Entity? ent Optional entity to check if they have permissions to modify.
 local function checkPermissions(self, ent)
-	if not Enabled:GetBool() then error("WebAudio is currently disabled on the server!") end
+	if not Enabled:GetBool() then E2Lib.raiseException("WebAudio is currently disabled on the server!", nil, self.trace) end
 	local ply = self.player
 
 	local required_lv = AdminOnly:GetInt()
 	if required_lv == 1 then
-		if not ply:IsAdmin() then error("WebAudio is currently restricted to admins!") end
+		if not ply:IsAdmin() then E2Lib.raiseException("WebAudio is currently restricted to admins!", nil, self.trace) end
 	elseif required_lv == 2 then
-		if not ply:IsSuperAdmin() then error("WebAudio is currently restricted to super-admins!") end
+		if not ply:IsSuperAdmin() then E2Lib.raiseException("WebAudio is currently restricted to super-admins!", nil, self.trace) end
 	end
 
 	if ent then
 		-- Checking if you have perms to modify this prop.
-		if not E2Lib.isOwner(self, ent) then error("You do not have permissions to modify this prop!") end
+		if not E2Lib.isOwner(self, ent) then E2Lib.raiseException("You do not have permissions to modify this prop!", nil, self.trace) end
 	end
 end
 
@@ -195,20 +195,20 @@ e2function webaudio webAudio(string url)
 
 	if not WebAudio.isWhitelistedURL(url) then
 		if WebAudio.Common.CustomWhitelist then
-			error("This URL is not whitelisted! The server has a custom whitelist.")
+			E2Lib.raiseException("This URL is not whitelisted! The server has a custom whitelist.", nil, self.trace)
 		else
-			error("This URL is not whitelisted! See github.com/Vurv78/WebAudio/blob/main/WHITELIST.md")
+			E2Lib.raiseException("This URL is not whitelisted! See github.com/Vurv78/WebAudio/blob/main/WHITELIST.md", nil, self.trace)
 		end
 	end
 
 	-- Creation Time Quota
 	if not CreationBurst:use(ply) then
-		error("You are creating WebAudios too fast. Check webAudioCanCreate before calling!")
+		E2Lib.raiseException("You are creating WebAudios too fast. Check webAudioCanCreate before calling!", nil, self.trace)
 	end
 
 	-- Stream Count Quota
 	if not checkCounter(ply, true) then
-		error("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!")
+		E2Lib.raiseException("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!", nil, self.trace)
 	end
 
 	return registerStream(self, url, ply)
@@ -248,6 +248,10 @@ e2function number webAudiosLeft()
 	return MaxStreams:GetInt() - (StreamCounter[self.player] or 0)
 end
 
+e2function number webAudioCanTransmit()
+	return NetBurst:check(self.player) and 1 or 0
+end
+
 __e2setcost(4)
 e2function number webaudio:isValid()
 	return IsValid(this) and 1 or 0
@@ -267,14 +271,14 @@ end
 __e2setcost(15)
 e2function number webaudio:play()
 	checkPermissions(self)
-	if not NetBurst:use(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end
 
 	return this:Play() and 1 or 0
 end
 
 e2function number webaudio:pause()
 	checkPermissions(self)
-	if not NetBurst:use(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end
 
 	return this:Pause() and 1 or 0
 end
@@ -324,14 +328,16 @@ end
 -- @return number Whether the WebAudio object successfully transmitted. Returns 0 if you are hitting quota.
 e2function number webaudio:update()
 	checkPermissions(self)
-	if not NetBurst:use(self.player) then return 0 end
+	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end
 
 	return this:Transmit() and 1 or 0
 end
 
 __e2setcost(5)
 e2function number webaudio:setParent(entity parent)
+	if not IsValid(parent) then return self:throw("Parent is invalid!", 0) end
 	checkPermissions(self, parent)
+
 	this:SetParent(parent)
 	return 1
 end
