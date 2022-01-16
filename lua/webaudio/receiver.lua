@@ -162,7 +162,11 @@ net.Receive("wa_create", function(len)
 			net.Start("wa_info", true)
 				WebAudio.writeID(id)
 				net.WriteBool(false)
-				net.WriteUInt(self.length, 16)
+				local continuous = self.length < 0
+				net.WriteBool(continuous) -- If the stream is continuous, it should return something less than 0.
+				if not continuous then
+					net.WriteUInt(self.length, 16)
+				end
 				net.WriteString(self.filename)
 			net.SendToServer()
 		end
@@ -206,7 +210,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 	if hasModifyFlag(modify_enum, Modify.time) then
 		if inside_net then self.time = net.ReadUInt(16) end
 		if handle_bass then
-			bass:SetTime(self.time, true) -- 18 hours max, if you need more, wtf..
+			bass:SetTime(self.time) -- 18 hours max, if you need more, wtf..
 		end
 	end
 

@@ -13,16 +13,25 @@
 
 STOPWATCH_STOPPED, STOPWATCH_PLAYING, STOPWATCH_PAUSED = 0, 1, 2
 
-local StopWatch = {}
-StopWatch.__index = StopWatch
+---@class Stopwatch
+---@field playback_rate number
+---@field playback_now number
+---@field playback_elapsed number
+---@field playback_duration number
+---@field state number # STOPWATCH_STOPPED, STOPWATCH_PLAYING, STOPWATCH_PAUSED
+---@field delay number
+---@field looping boolean
+local Stopwatch = {}
+Stopwatch.__index = Stopwatch
 
 local timer_now = RealTime
 
 --- Creates a StopWatch.
--- @param number duration How long the stopwatch will last
--- @param function callback What to run when the stopwatch finishes.
-local function Initialize(_, duration, fn)
-	local self = setmetatable({}, StopWatch)
+---@param duration number # How long the stopwatch will last
+---@param callback fun(self: Stopwatch) # What to run when the stopwatch finishes.
+---@return Stopwatch
+local function Initialize(_, duration, callback)
+	local self = setmetatable({}, Stopwatch)
 	self.playback_rate = 1
 	self.playback_now = timer_now()
 	self.playback_elapsed = 0
@@ -45,7 +54,7 @@ local function Initialize(_, duration, fn)
 			self.playback_elapsed = self.playback_duration
 			self.state = STOPWATCH_STOPPED
 		end
-		fn(self)
+		callback(self)
 	end)
 	timer.Stop(mangled)
 
@@ -54,12 +63,12 @@ local function Initialize(_, duration, fn)
 	return self
 end
 
-setmetatable(StopWatch, {
+setmetatable(Stopwatch, {
 	__call = Initialize
 })
 
 --- Pauses a stopwatch at the current time to be resumed with :Play
-function StopWatch:Pause()
+function Stopwatch:Pause()
 	if self.state == STOPWATCH_PLAYING then
 		self.state = STOPWATCH_PAUSED
 		timer.Pause(self.timerid)
@@ -67,7 +76,7 @@ function StopWatch:Pause()
 end
 
 --- Resumes the stopwatch after it was paused. You can't :Play a :Stop(ped) timer, use :Start for that.
-function StopWatch:Play()
+function Stopwatch:Play()
 	if self.state == STOPWATCH_PAUSED then
 		self.playback_now = timer_now()
 		self.state = STOPWATCH_PLAYING
@@ -76,7 +85,7 @@ function StopWatch:Play()
 end
 
 --- Used internally by GetTime, don't use.
-function StopWatch:UpdateTime()
+function Stopwatch:UpdateTime()
 	if self.state == STOPWATCH_PLAYING then
 		local now = timer_now()
 		local elapsed = (now - self.playback_now) * self.playback_rate
@@ -88,7 +97,7 @@ end
 
 --- Stops the timer with the stored elapsed time.
 -- Continue from here with :Start()
-function StopWatch:Stop()
+function Stopwatch:Stop()
 	if self.state ~= STOPWATCH_STOPPED then
 		self:UpdateTime()
 		self.state = STOPWATCH_STOPPED
@@ -97,7 +106,7 @@ function StopWatch:Stop()
 end
 
 --- (Re)starts the stopwatch.
-function StopWatch:Start()
+function Stopwatch:Start()
 	if self.state == STOPWATCH_STOPPED then
 		self.playback_now = timer_now()
 		self.state = STOPWATCH_PLAYING
@@ -107,15 +116,15 @@ function StopWatch:Start()
 end
 
 --- Returns the playback duration of the stopwatch.
--- @return number Length
-function StopWatch:GetDuration()
+---@return number length
+function Stopwatch:GetDuration()
 	return self.playback_duration
 end
 
 --- Returns the playback duration of the stopwatch.
--- @param number duration
--- @return StopWatch self
-function StopWatch:SetDuration(duration)
+---@param duration number
+---@return Stopwatch self
+function Stopwatch:SetDuration(duration)
 	self.playback_duration = duration
 	self.delay = duration
 	timer.Adjust( self.timerid, duration )
@@ -126,27 +135,27 @@ function StopWatch:SetDuration(duration)
 end
 
 --- Sets the playback rate / speed of the stopwatch. 2 is twice as fast, etc.
--- @param number n Speed
--- @return StopWatch self
-function StopWatch:SetRate(n)
+---@param speed number
+---@return Stopwatch self
+function Stopwatch:SetRate(speed)
 	self:UpdateTime()
-	self.playback_rate = n
+	self.playback_rate = speed
 	-- New Duration - Elapsed
-	self.delay = (self.playback_duration / n) - self.playback_elapsed
+	self.delay = (self.playback_duration / speed) - self.playback_elapsed
 	timer.Adjust( self.timerid, self.delay )
 	return self
 end
 
 --- Returns the playback rate of the stopwatch. Default 1
--- @return number Playback rate
-function StopWatch:GetRate()
+---@return number rate # Playback rate
+function Stopwatch:GetRate()
 	return self.playback_rate
 end
 
 --- Sets the playback time of the stopwatch.
--- @param number n Time
--- @return StopWatch self
-function StopWatch:SetTime(n)
+---@param n number # Time
+---@return Stopwatch self
+function Stopwatch:SetTime(n)
 	self.playback_now = timer_now()
 	self.playback_elapsed = n
 	self.delay = (self.playback_duration - n) / self.playback_rate
@@ -156,22 +165,22 @@ function StopWatch:SetTime(n)
 end
 
 --- Returns the current playback time in seconds of the stopwatch
--- @return number Playback time
-function StopWatch:GetTime()
+---@return number time # Playback time
+function Stopwatch:GetTime()
 	self:UpdateTime()
 	return self.playback_elapsed
 end
 
 --- Returns the current playback state of the stopwatch. 0 for STOPWATCH_STOPPED, 1 for STOPWATCH_PLAYING, 2 for STOPWATCH_PAUSED
--- @return number Playback state
-function StopWatch:GetState()
+---@return number state Playback state
+function Stopwatch:GetState()
 	return self.state
 end
 
 --- Sets the stopwatch to loop. Won't call the callback if it is looping.
--- @param boolean loop Whether it's looping
--- @return StopWatch self
-function StopWatch:SetLooping(loop)
+---@param loop boolean Whether it's looping
+---@return Stopwatch self
+function Stopwatch:SetLooping(loop)
 	if self.looping ~= loop then
 		self.looping = loop
 		timer.Adjust( self.timerid, self.delay, 0, nil )
@@ -180,11 +189,11 @@ function StopWatch:SetLooping(loop)
 end
 
 --- Returns if the stopwatch is looping
--- @return boolean Looping
-function StopWatch:GetLooping()
+---@return boolean looping
+function Stopwatch:GetLooping()
 	return self.looping
 end
 
-_G.StopWatch = StopWatch
+_G.StopWatch = Stopwatch
 
-return StopWatch
+return Stopwatch

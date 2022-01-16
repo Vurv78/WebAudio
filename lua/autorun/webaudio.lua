@@ -79,6 +79,12 @@ end
 ]]
 
 --- Initiate WebAudio struct for both realms
+---@class WebAudio
+---@field stopwatch Stopwatch
+---@field radius number
+---@field looping boolean
+---@field parented boolean
+---@field volume number # 0-1
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
 
@@ -175,7 +181,7 @@ function WebAudio:Destroy(transmit)
 	return true
 end
 
---- Returns time elapsed in URL stream.
+--- Returns current time in URL stream.
 -- Time elapsed is calculated on the server using playback rate and playback time.
 -- Not perfect for the clients and there will be desync if you pause and unpause constantly.
 -- @return number Elapsed time
@@ -378,6 +384,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 		self.bass = bassobj
 		self.parent_pos = Vector() -- Parent pos being nil means we will go directly to the parent's position w/o calculating local pos.
 	else
+		-- Stream will be set to 100 second length until the length of the audio stream is determined by the client.
 		self.stopwatch = StopWatch(100, function(watch)
 			if not watch:GetLooping() then
 				self:Pause()

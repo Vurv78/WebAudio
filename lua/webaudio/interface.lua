@@ -88,6 +88,13 @@ function WebAudio:Play()
 
 	if self.playing == false then
 		self:AddModify(Modify.playing)
+
+		if self.stopwatch.state == STOPWATCH_STOPPED then
+			self.stopwatch:Start()
+		else
+			self.stopwatch:Play()
+		end
+
 		self.playing = true
 		self:Transmit()
 		return true
@@ -101,6 +108,7 @@ function WebAudio:Pause()
 
 	if self.playing then
 		self:AddModify(Modify.playing)
+		self.stopwatch:Pause()
 		self.playing = false
 		self:Transmit()
 
@@ -293,7 +301,12 @@ net.Receive("wa_info", function(len, ply)
 			-- Failed to create. Doesn't support 3d, or is block streamed.
 			stream:Destroy()
 		else
-			local length = net.ReadUInt(16)
+			local continuous = net.ReadBool()
+			local length = -2
+			if not continuous then
+				length = net.ReadUInt(16)
+			end
+
 			local file_name = net.ReadString()
 			stream.length = length
 			stream.filename = file_name
@@ -301,9 +314,8 @@ net.Receive("wa_info", function(len, ply)
 
 			local watch = stream.stopwatch
 			watch:SetDuration(length)
-			watch:SetRate(stream.playback_rate)
-			watch:SetTime(stream.time)
-			watch:Start()
+			-- watch:SetRate(stream.playback_rate)
+			-- watch:SetTime(stream.time)
 		end
 	end
 end)
