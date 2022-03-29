@@ -39,7 +39,7 @@ net.Receive("wa_fft", function(len)
 	net.SendToServer()
 end)
 
-timer.Create("wa_think", 150 / 1000, 0, function()
+timer.Create("wa_think", 100 / 1000, 0, function()
 	local LocalPlayer = LocalPlayer()
 	if not IsValid(LocalPlayer) then return end
 
@@ -51,9 +51,21 @@ timer.Create("wa_think", 150 / 1000, 0, function()
 			-- Handle Parenting
 			local parent, parent_pos = stream.parent, stream.parent_pos
 			if IsValid(parent) then
-				local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
-				bass:SetPos( position )
-				stream.pos = position
+				if parent_pos then
+					-- Offset from prop
+					local position = parent:LocalToWorld(parent_pos)
+					if stream.pos ~= position then
+						bass:SetPos( position )
+						stream.pos = position
+					end
+				else
+					-- Origin of prop
+					local position = parent:GetPos() + parent:GetVelocity() * 0.05
+					if stream.pos ~= position then
+						bass:SetPos( position )
+						stream.pos = position
+					end
+				end
 			end
 
 			-- Manually handle volume as you go farther from the stream.
