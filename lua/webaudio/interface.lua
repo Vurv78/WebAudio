@@ -11,6 +11,7 @@ util.AddNetworkString("wa_enable") -- To receive from the client to make sure pe
 util.AddNetworkString("wa_info") -- To receive information about BASS / IGmodAudioChannel streams from clients that create them.
 util.AddNetworkString("wa_fft") -- Receive fft data.
 
+---@class WebAudio
 local WebAudio = Common.WebAudio
 
 --- TODO: Make this nicer?
@@ -22,8 +23,8 @@ local StreamDisabledPlayers = { -- People who have wa_enabled set to 0
 }
 
 --- Adds a modify flag to the payload to be sent on transmission
--- @param number n Modify flag from the Modify struct in wa_common
--- @return boolean Whether it modified. Will return nil if stream is destroyed.
+--- @param n number Modify flag from the Modify struct in wa_common
+--- @return boolean # Whether it modified. Will return nil if stream is destroyed.
 function WebAudio:AddModify(n)
 	if self:IsDestroyed() then return end
 	self.modified = bit.bor(self.modified, n)
@@ -31,8 +32,8 @@ end
 
 --- Sets the volume of the stream
 -- Does not transmit
--- @param number vol Float Volume (1 is 100%, 2 is 200% ..)
--- @return boolean Successfully set time, will return nil if stream or 'vol' are invalid or 'vol' didn't change.
+--- @param vol number Float Volume (1 is 100%, 2 is 200% ..)
+--- @return boolean # Successfully set time, will return nil if stream or 'vol' are invalid or 'vol' didn't change.
 function WebAudio:SetVolume(vol)
 	if self:IsDestroyed() then return end
 	if isnumber(vol) and self.volume ~= vol then
@@ -44,8 +45,8 @@ end
 
 --- Sets the current playback time of the stream.
 -- Does not transmit
--- @param number time UInt16 Playback time
--- @return boolean Successfully set time, will return nil if stream is invalid.
+--- @param time number UInt16 Playback time
+--- @return boolean # Successfully set time, will return nil if stream is invalid.
 function WebAudio:SetTime(time)
 	if self:IsDestroyed() then return end
 	if isnumber(time) then
@@ -57,8 +58,8 @@ function WebAudio:SetTime(time)
 end
 
 --- Sets the position of the stream.
--- @param Vector pos Position
--- @return boolean Successfully set position, will return nil if stream or 'pos' are invalid or if 'pos' didn't change.
+--- @param pos GVector Position
+--- @return boolean # Successfully set position, will return nil if stream or 'pos' are invalid or if 'pos' didn't change.
 function WebAudio:SetPos(pos)
 	if self:IsDestroyed() then return end
 	if self:IsParented() then return end
@@ -70,8 +71,8 @@ function WebAudio:SetPos(pos)
 end
 
 --- Sets the direction in which the stream will play
--- @param Vector dir Direction to set to
--- @return boolean Successfully set direction, will return nil if stream or 'dir' are invalid or if 'dir' didn't change.
+--- @param dir GVector Direction to set to
+--- @return boolean # Successfully set direction, will return nil if stream or 'dir' are invalid or if 'dir' didn't change.
 function WebAudio:SetDirection(dir)
 	if self:IsDestroyed() then return end
 	if isvector(dir) and self.direction ~= dir then
@@ -82,7 +83,7 @@ function WebAudio:SetDirection(dir)
 end
 
 --- Resumes or starts the stream.
--- @return boolean Successfully played, will return nil if the stream is destroyed or if already playing
+--- @return boolean # Successfully played, will return nil if the stream is destroyed or if already playing
 function WebAudio:Play()
 	if self:IsDestroyed() then return end
 
@@ -102,7 +103,7 @@ function WebAudio:Play()
 end
 
 --- Pauses the stream and automatically transmits.
--- @return boolean Successfully paused, will return nil if the stream is destroyed or if already paused
+--- @return boolean # Successfully paused, will return nil if the stream is destroyed or if already paused
 function WebAudio:Pause()
 	if self:IsDestroyed() then return end
 
@@ -117,8 +118,8 @@ function WebAudio:Pause()
 end
 
 --- Sets the playback rate of the stream.
--- @param number rate Playback rate. Float64 that clamps to 255.
--- @return boolean Successfully set rate, will return nil if stream or 'rate' are invalid or if 'rate' didn't change.
+--- @param rate number Playback rate. Float64 that clamps to 255.
+--- @return boolean # Successfully set rate, will return nil if stream or 'rate' are invalid or if 'rate' didn't change.
 function WebAudio:SetPlaybackRate(rate)
 	if self:IsDestroyed() then return end
 	if not isnumber(rate) then return end
@@ -134,8 +135,8 @@ function WebAudio:SetPlaybackRate(rate)
 end
 
 --- Sets the radius of the stream. Uses Set3DFadeDistance internally.
--- @param number radius UInt16 radius
--- @return boolean Successfully set radius, will return nil if the stream or 'radius' are invalid or if radius didn't change.
+--- @param radius number UInt16 radius
+--- @return boolean # Successfully set radius, will return nil if the stream or 'radius' are invalid or if radius didn't change.
 function WebAudio:SetRadius(radius)
 	if self:IsDestroyed() then return end
 	if isnumber(radius) and self.radius ~= radius then
@@ -146,11 +147,11 @@ function WebAudio:SetRadius(radius)
 end
 
 --- Sets the parent of the WebAudio object. Nil to unparent
--- @param entity? parent Entity to parent to or nil to unparent.
--- @return boolean Whether it was successfully parented. Returns nil if the stream is invalid.
+--- @param ent GEntity? Entity to parent to or nil to unparent.
+--- @return boolean # Whether it was successfully parented. Returns nil if the stream is invalid.
 function WebAudio:SetParent(ent)
 	if self:IsDestroyed() then return end
-	if isentity(ent) and ent:IsValid() then
+	if IsEntity(ent) and IsValid(ent) then
 		self.parented = true
 		self.parent = ent
 	else
@@ -162,8 +163,8 @@ function WebAudio:SetParent(ent)
 end
 
 --- Makes the stream loop or stop looping.
--- @param boolean loop Whether it should be looping
--- @return boolean If we set the value or not. Returns nil if the stream isn't valid or if the value didn't change.
+--- @param loop boolean Whether it should be looping
+--- @return boolean # If we set the value or not. Returns nil if the stream isn't valid or if the value didn't change.
 function WebAudio:SetLooping(loop)
 	if self:IsDestroyed() then return end
 	if self.looping ~= loop then
@@ -180,8 +181,8 @@ local LastUpdates = setmetatable({}, {
 
 --- Returns the fast fourier transform of the webaudio stream.
 -- Returns nil if invalid.
--- @param boolean update Whether to update the fft values.
--- @return table FFT
+--- @param update boolean Whether to update the fft values.
+--- @return table # FFT
 function WebAudio:GetFFT(update, cooldown)
 	if self:IsDestroyed() then return end
 	if update and IsValid(self.owner) then
@@ -203,7 +204,7 @@ end
 
 local hasModifyFlag = Common.hasModifyFlag
 --- Transmits all stored data on the server about the WebAudio object to the clients
--- @return boolean If successfully transmitted.
+--- @return boolean # If successfully transmitted.
 function WebAudio:Transmit()
 	if self:IsDestroyed() then return end
 	net.Start("wa_change", true)
@@ -259,13 +260,13 @@ end
 
 --- Registers an object to not send any net messages to from WebAudio transmissions.
 -- This is called by clientside destruction.
--- @param Player ply The player to stop sending net messages to
+--- @param ply GPlayer The player to stop sending net messages to
 function WebAudio:Unsubscribe(ply)
 	self.ignored:AddPlayer(ply)
 end
 
 --- Registers an object to send net messages to a chip after calling Unsubscribe on it.
--- @param Player ply The player to register to get messages again
+--- @param ply GPlayer The player to register to get messages again
 function WebAudio:Subscribe(ply)
 	self.ignored:RemovePlayer(ply)
 end
@@ -358,11 +359,12 @@ hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
 	end
 end)
 
+---@class WebAudio
 local WebAudioStatic = WebAudio.getStatics()
 
 --- Unsubscribe a player from receiving WebAudio net messages
 -- Like the non-static method but for all future Streams & Messages
--- @param Player ply Player to check
+--- @param ply GPlayer Player to check
 function WebAudioStatic.unsubscribe(ply)
 	if WebAudio.isSubscribed(ply) then
 		StreamDisabledPlayers.__hash[ply] = true
@@ -371,7 +373,7 @@ function WebAudioStatic.unsubscribe(ply)
 end
 
 --- Resubscribe a player to receive WebAudio net messages
--- @param Player ply Player to subscribe
+--- @param ply GPlayer Player to subscribe
 function WebAudioStatic.subscribe(ply)
 	if not WebAudio.isSubscribed(ply) then
 		StreamDisabledPlayers.__hash[ply] = false
@@ -380,8 +382,8 @@ function WebAudioStatic.subscribe(ply)
 end
 
 --- Returns whether the player is subscribed to receive WebAudio net messages or not.
--- @param Player ply Player to check
--- @return boolean If the player is subscribed.
+--- @param ply GPlayer Player to check
+--- @return boolean # If the player is subscribed.
 function WebAudioStatic.isSubscribed(ply)
 	return not StreamDisabledPlayers.__hash[ply]
 end

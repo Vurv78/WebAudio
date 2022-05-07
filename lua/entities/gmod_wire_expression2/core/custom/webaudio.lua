@@ -86,8 +86,8 @@ e2function number operator_is(webaudio wa)
 end
 
 --- Checks if a player / chip has permissions to use webaudio.
--- @param table self 'self' from E2Functions.
--- @param Entity? ent Optional entity to check if they have permissions to modify.
+--- @param self table 'self' from E2Functions.
+--- @param ent Entity? Optional entity to check if they have permissions to modify.
 local function checkPermissions(self, ent)
 	if not Enabled:GetBool() then E2Lib.raiseException("WebAudio is currently disabled on the server!", nil, self.trace) end
 	local ply = self.player
@@ -325,7 +325,7 @@ e2function void webaudio:destroy()
 end
 
 --- Updates the clientside IGmodAudioChannel object to pair with the WebAudio object.
--- @return number Whether the WebAudio object successfully transmitted. Returns 0 if you are hitting quota.
+--- @return number # Whether the WebAudio object successfully transmitted. Returns 0 if you are hitting quota.
 e2function number webaudio:update()
 	checkPermissions(self)
 	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end

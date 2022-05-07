@@ -18,6 +18,7 @@ STOPWATCH_STOPPED, STOPWATCH_PLAYING, STOPWATCH_PAUSED = 0, 1, 2
 ---@field playback_now number
 ---@field playback_elapsed number
 ---@field playback_duration number
+---@field timerid string # Mangled string id for the stopwatch. Created from string.format("stopwatch_%p", self) (Using self's pointer.)
 ---@field state number # STOPWATCH_STOPPED, STOPWATCH_PLAYING, STOPWATCH_PAUSED
 ---@field delay number
 ---@field looping boolean
@@ -127,7 +128,7 @@ end
 function Stopwatch:SetDuration(duration)
 	self.playback_duration = duration
 	self.delay = duration
-	timer.Adjust( self.timerid, duration )
+	timer.Adjust( self.timerid, duration, nil, nil )
 	if self.playback_elapsed > duration then
 		self:Stop()
 	end
@@ -142,7 +143,7 @@ function Stopwatch:SetRate(speed)
 	self.playback_rate = speed
 	-- New Duration - Elapsed
 	self.delay = (self.playback_duration / speed) - self.playback_elapsed
-	timer.Adjust( self.timerid, self.delay )
+	timer.Adjust( self.timerid, self.delay, nil, nil )
 	return self
 end
 
@@ -160,7 +161,7 @@ function Stopwatch:SetTime(n)
 	self.playback_elapsed = n
 	self.delay = (self.playback_duration - n) / self.playback_rate
 
-	timer.Adjust( self.timerid, self.delay )
+	timer.Adjust( self.timerid, self.delay, nil, nil )
 	return self
 end
 

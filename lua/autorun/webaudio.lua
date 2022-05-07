@@ -20,7 +20,9 @@ local Modify = {
 	destroyed = 512
 }
 
-local function hasModifyFlag(...) return bit.band(...) ~= 0 end
+local function hasModifyFlag(first, ...)
+	return bit.band(first, ...) ~= 0
+end
 
 --- Debug function that's exported as well
 local function getFlags(number)
@@ -35,12 +37,14 @@ end
 
 -- SERVER
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
-local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1)
+
+-- Max in total is ~1023 from ID_LEN writing a 10 bit uint. Assuming ~30 players max using webaudio, can only give ~30.
+local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1, 30)
 
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
 local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0, 100000)
-local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0)
+local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0, 1000000)
 local WAFFTEnabled = CreateConVar("wa_fft_enable", "1", FCVAR_ARCHIVE, "Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight.", 0, 1)
 
 -- CLIENT
@@ -51,10 +55,10 @@ if CLIENT then
 	WAVerbosity = CreateConVar("wa_verbosity", "1", FCVAR_ARCHIVE, "Verbosity of WebAudio information & warnings printed to your console. 2 is warnings & stream logging, 1 is only warnings (default), 0 is nothing (Not recommended).", 0, 2)
 end
 
-local Black = Color(0, 0, 0)
-local Color_Warn = Color(243, 71, 41)
-local Color_Notify = Color(65, 172, 235)
-local White = Color(255, 255, 255)
+local Black = Color(0, 0, 0, 255)
+local Color_Warn = Color(243, 71, 41, 255)
+local Color_Notify = Color(65, 172, 235, 255)
+local White = Color(255, 255, 255, 255)
 
 local function warn(...)
 	local msg = string.format(...)
@@ -80,11 +84,21 @@ end
 
 --- Initiate WebAudio struct for both realms
 ---@class WebAudio
----@field stopwatch Stopwatch
----@field radius number
----@field looping boolean
----@field parented boolean
----@field volume number # 0-1
+---@field stopwatch Stopwatch # SERVER
+---@field radius number # SHARED
+---@field looping boolean # SHARED
+---@field parent GEntity # SHARED
+---@field parented boolean # SHARED
+---@field parent_pos GVector # CLIENT
+---@field volume number # SHARED 0-1
+---@field fft table<number, number> # SERVER. Array of numbers 0-255 representing the FFT data.
+---@field bass GIGModAudioChannel # CLIENT. Bass channel.
+---@field filename string # SHARED. Filename of the sound. Not necessarily URL. Requires client to network it first.
+---@field length integer # SHARED. Playtime length of the sound. Requires client to network it first.
+---@field owner GEntity # SERVER. Owner of the webaudio or NULL for lua-owned.
+---@field pos GVector # SERVER. Position of stream
+---@field id integer # Custom ID for webaudio stream allocated between 0-MAX
+---@field ignored GCRecipientFilter # Players to ignore when sending net messages.
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
 
@@ -104,7 +118,7 @@ end
 
 --- Alloc an id for a webaudio stream & register it to WebAudios
 -- Modified from https://gist.github.com/Vurv78/2de64f77d04eb409abed008ab000e5ef
--- @param self WebAudio stream
+--- @return integer? # ID or nil if reached max.
 local function allocID()
 	if WebAudioCounter > MaxID then return end
 
@@ -133,19 +147,19 @@ end
 debug.getregistry()["WebAudio"] = WebAudio
 
 --- Returns whether the WebAudio object is valid and not destroyed.
--- @return boolean If it's Valid
+--- @return boolean # If it's Valid
 function WebAudio:IsValid()
 	return not self.destroyed
 end
 
 --- Returns whether the WebAudio object is Null
--- @return boolean Whether it's destroyed/null
+--- @return boolean # Whether it's destroyed/null
 function WebAudio:IsDestroyed()
 	return self.destroyed
 end
 
 --- Destroys a webaudio object and makes it the same (value wise) as WebAudio.getNULL()
--- @param boolean transmit If SERVER, should we transmit the destruction to the client? Default true
+--- @param transmit boolean If SERVER, should we transmit the destruction to the client? Default true
 function WebAudio:Destroy(transmit)
 	if self:IsDestroyed() then return end
 	if transmit == nil then transmit = true end
@@ -184,67 +198,68 @@ end
 --- Returns current time in URL stream.
 -- Time elapsed is calculated on the server using playback rate and playback time.
 -- Not perfect for the clients and there will be desync if you pause and unpause constantly.
--- @return number Elapsed time
+--- @return number # Elapsed time
 function WebAudio:GetTimeElapsed()
 	if self:IsDestroyed() then return -1 end
 	return self.stopwatch:GetTime()
 end
 
 --- Returns the volume of the object set by SetVolume
--- @return number Volume from 0-1
+---- @return number # # Volume from 0-1
 function WebAudio:GetVolume()
 	return self.volume
 end
 
 --- Returns the position of the WebAudio object.
--- @return vector? Position of the stream or nil if not set.
+---- @return GVector? # # Position of the stream or nil if not set.
 function WebAudio:GetPos()
 	return self.pos
 end
 
 --- Returns the radius of the stream set by SetRadius
--- @return number Radius
+---- @return number # # Radius
 function WebAudio:GetRadius()
 	return self.radius
 end
 
 --- Returns the playtime length of a WebAudio object.
--- @return number Playtime Length
+---- @return number # # Playtime Length
 function WebAudio:GetLength()
 	return self.length
 end
 
 --- Returns the file name of the WebAudio object. Not necessarily always the URL.
--- @return string File name
+---- @return string # # File name
 function WebAudio:GetFileName()
 	return self.filename
 end
 
 --- Returns the state of the WebAudio object
--- @return number State, See STOPWATCH_* Enums
+---- @return number # # State, See STOPWATCH_* Enums
 function WebAudio:GetState()
 	if self:IsDestroyed() then return STOPWATCH_STOPPED end
 	return self.stopwatch:GetState()
 end
 
 --- Returns whether the webaudio stream is looping (Set by SetLooping.)
--- @return boolean Looping
+---- @return boolean # # Looping
 function WebAudio:GetLooping()
 	return self.looping
 end
 
 --- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
--- @return boolean Whether it's parented
+---- @return boolean # # Whether it's parented
 function WebAudio:IsParented()
 	return self.parented
 end
 
 -- Static Methods
+---@class WebAudio
 local WebAudioStatic = {}
 -- For consistencies' sake, Static functions will be lowerCamelCase, while object / meta methods will be CamelCase.
 
 --- Returns an unusable WebAudio object that just has the destroyed field set to true.
--- @return Webaudio The null stream
+--- @return WebAudio # The null stream
 function WebAudioStatic.getNULL()
 	return setmetatable({ destroyed = true }, WebAudio)
 end
@@ -259,37 +274,37 @@ WebAudio.MODIFY_LEN = MODIFY_LEN
 WebAudio.FFTSAMP_LEN = FFTSAMP_LEN
 
 --- Same as net.ReadUInt but doesn't need the bit length in order to adapt our code more easily.
--- @return number UInt10
+---- @return number # # UInt10
 function WebAudioStatic.readID()
 	return net.ReadUInt(ID_LEN)
 end
 
 --- Faster version of WebAudio.getFromID( WebAudio.readID() )
--- @return WebAudio? The stream or nil if it wasn't found
+---- @return WebAudio? # # The stream or nil if it wasn't found
 function WebAudioStatic.readStream()
 	return WebAudios[ net.ReadUInt(ID_LEN) ]
 end
 
 --- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
--- @param number id UInt10 (max id is 1023)
+---- @param number id UInt10 (max id is 1023)
 function WebAudioStatic.writeID(id)
 	net.WriteUInt(id, ID_LEN)
 end
 
 --- Same as net.WriteUInt but doesn't need the bit length in order to adapt our code more easily.
--- @param WebAudio stream The stream. This is the same as WebAudio.writeID( stream.id )
+---- @param WebAudio stream The stream. This is the same as WebAudio.writeID( stream.id )
 function WebAudioStatic.writeStream(stream)
 	net.WriteUInt(stream.id, ID_LEN)
 end
 
 --- Reads a WebAudio Modify enum
--- @return number UInt16
+---- @return number # UInt16
 function WebAudioStatic.readModify()
 	return net.ReadUInt(MODIFY_LEN)
 end
 
 --- Writes a WebAudio Modify enum
--- @param number UInt16
+---- @param number modify UInt16
 function WebAudioStatic.writeModify(modify)
 	net.WriteUInt(modify, MODIFY_LEN)
 end
@@ -305,19 +320,22 @@ end
 local next = next
 
 --- Returns an iterator for the global table of all webaudio streams. Use this in a for in loop
--- @return function Iterator, should be the same as ipairs / next
--- @return table Global webaudio table. Same as WebAudio.getList()
--- @return number Origin index, will always be nil (0 would be ipairs)
+---- @return function # # Iterator, should be the same as ipairs / next
+---- @return table # # Global webaudio table. Same as WebAudio.getList()
+---- @return number # # Origin index, will always be nil (0 would be ipairs)
 function WebAudioStatic.getIterator()
 	return next, WebAudios, nil
 end
 
 --- Returns the number of currently active streams
 -- Cheaper than manually calling __len on the webaudio table as we keep track of it ourselves.
+---@return integer
 function WebAudioStatic.getCountActive()
 	return WebAudioCounter
 end
 
+--- Returns if an object is a WebAudio object, even if Invalid/Destroyed.
+---@return boolean?
 local function isWebAudio(v)
 	if not istable(v) then return end
 	return debug.getmetatable(v) == WebAudio
@@ -326,7 +344,7 @@ end
 WebAudioStatic.instanceOf = isWebAudio
 
 --- If you want to extend the static functions
--- @return table The WebAudio static function / var table.
+--- @return table # The WebAudio static function / var table.
 function WebAudioStatic.getStatics()
 	return WebAudioStatic
 end
@@ -370,7 +388,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.radius = math.min(200, WAMaxRadius:GetInt()) -- Default IGmodAudioChannel radius
 
 	self.pos = nil
-	self.direction = Vector()
+	self.direction = Vector(0, 0, 0)
 	self.looping = false
 	-- Mutable --
 
@@ -382,7 +400,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 
 	if CLIENT then
 		self.bass = bassobj
-		self.parent_pos = Vector() -- Parent pos being nil means we will go directly to the parent's position w/o calculating local pos.
+		self.parent_pos = Vector(0, 0, 0) -- Parent pos being nil means we will go directly to the parent's position w/o calculating local pos.
 	else
 		-- Stream will be set to 100 second length until the length of the audio stream is determined by the client.
 		self.stopwatch = StopWatch(100, function(watch)
@@ -493,8 +511,9 @@ local LocalWhitelist = {}
 
 if SERVER then
 	util.AddNetworkString("wa_sendcwhitelist") -- Receive server whitelist.
+
 	local function sendCustomWhitelist(whitelist, ply)
-		net.Start("wa_sendcwhitelist")
+		net.Start("wa_sendcwhitelist", false)
 			if whitelist then
 				net.WriteTable(whitelist)
 			end
@@ -504,6 +523,7 @@ if SERVER then
 			net.Broadcast()
 		end
 	end
+
 	WebAudioStatic.sendCustomWhitelist = sendCustomWhitelist
 
 	hook.Add("PlayerInitialSpawn", "wa_player_whitelist", function(ply)
@@ -593,7 +613,7 @@ concommand.Add("wa_reload_whitelist", function()
 		WebAudio.Common.CustomWhitelist = false
 		WebAudio.sendCustomWhitelist()
 	end
-end)
+end, nil, "Reload the whitelist", 0)
 
 concommand.Add("wa_list", function()
 	local stream_list, n = {}, 0
@@ -610,11 +630,11 @@ concommand.Add("wa_list", function()
 	else
 		MsgC( White, table.concat(stream_list, '\n'), "\n" )
 	end
-end)
+end, nil, "List all currently playing WebAudio streams", 0)
 
 concommand.Add("wa_help", function()
 	MsgC( White, "You can get help & report issues on the Github: ", Color_Notify, "https://github.com/Vurv78/WebAudio", White, "\n" )
-end)
+end, nil, "Get help & report issues on the Github", 0)
 
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 

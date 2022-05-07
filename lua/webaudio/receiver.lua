@@ -81,8 +81,9 @@ net.Receive("wa_create", function(len)
 	local id, url, owner = WebAudio.readID(), net.ReadString(), net.ReadEntity()
 	local verbosity = Verbosity:GetInt()
 
-	local function warn() end
-	local function notify() end
+
+	local warn
+	local notify
 	if verbosity >= 2 then
 		-- Very verbose (old default)
 		warn = wa_warn
@@ -90,6 +91,9 @@ net.Receive("wa_create", function(len)
 	elseif verbosity >= 1 then
 		-- Warnings only (new default)
 		warn = wa_warn
+	else
+		function warn(...) end
+		function notify(...) end
 	end
 
 	if not Enabled:GetBool() then
@@ -191,10 +195,10 @@ local Modify = Common.Modify
 local hasModifyFlag = Common.hasModifyFlag
 
 --- Stores changes on the Receiver object
--- @param number id ID of the Receiver Object, to be used to search the table of 'WebAudio.getList()'
--- @param number modify_enum Mixed bitwise flag that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
--- @param boolean handle_bass Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
--- @param boolean inside_net Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
+--- @param id number ID of the Receiver Object, to be used to search the table of 'WebAudio.getList()'
+--- @param modify_enum number Mixed bitwise flag that will be sent by the server to determine what changed in an object to avoid wasting a lot of bits for every piece of information.
+--- @param handle_bass boolean Whether this object has a 'bass' object. If so, we can just immediately apply the changes to the object.
+--- @param inside_net boolean Whether this function is inside the net message that contains the new information. If not, we're most likely just applying object changes to the receiver after waiting for the IGmodAudioChannel object to be created.
 function updateObject(id, modify_enum, handle_bass, inside_net)
 	-- Object destroyed
 	local self = WebAudio.getFromID(id)
@@ -329,7 +333,7 @@ net.Receive("wa_change", function(len)
 end)
 
 --- Stops every currently existing stream
--- @param boolean write_ids Whether to net write IDs or not while looping through the streams. Used for wa_ignore.
+--- @param write_ids boolean Whether to net write IDs or not while looping through the streams. Used for wa_ignore.
 local function stopStreams(write_ids)
 	for id, stream in WebAudio.getIterator() do
 		if stream then

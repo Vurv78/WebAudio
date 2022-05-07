@@ -2,7 +2,7 @@
 
 local tbl = E2Helper.Descriptions
 local function desc(name, description)
-    tbl[name] = description
+	tbl[name] = description
 end
 
 desc("webAudio(s)", "Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 500 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!")
