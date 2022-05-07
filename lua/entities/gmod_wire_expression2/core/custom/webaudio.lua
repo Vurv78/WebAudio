@@ -399,6 +399,10 @@ e2function number webaudio:getLooping()
 	return this:GetLooping() and 1 or 0
 end
 
+e2function number webaudio:get3DEnabled()
+	return this:Get3DEnabled() and 1 or 0
+end
+
 __e2setcost(800)
 e2function array webaudio:getFFT()
 	return this:GetFFT(true, 0.08) or {}

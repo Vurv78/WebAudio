@@ -33,6 +33,7 @@ desc("setParent(xwa:e)", "Parents the stream position to e, local to the entity.
 desc("setParent(xwa:)", "Unparents the stream")
 desc("setRadius(xwa:n)", "Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500.")
 desc("setLooping(xwa:n)", "If n is not 0, sets the stream to loop. Else stops looping.")
+desc("set3DEnabled(xwa:n)", "If n is not 0, sets the stream to be 3D. By default streams are 3D. Else, sets the audio to play directly on clients (mono audio).")
 
 -- is* Getters
 desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (If it is not destroyed & Not invalid from quota)")
@@ -43,6 +44,7 @@ desc("getPos(xwa:)", "Returns the current position of the WebAudio object. This 
 desc("getVolume(xwa:)", "Returns the volume of the WebAudio object set by setVolume")
 desc("getRadius(xwa:)", "Returns the radius of the WebAudio object set by setRadius")
 desc("getLooping(xwa:)", "Returns if the stream is looping, set by setLooping")
+desc("get3DEnabled(xwa:)", "Returns if the stream's 3D is enabled, set by set3DEnabled")
 
 -- Replicated Clientside behavior on server
 desc("getTime(xwa:)", "Returns the playback time of the stream in seconds.")

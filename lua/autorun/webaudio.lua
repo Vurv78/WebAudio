@@ -215,50 +215,56 @@ function WebAudio:GetTimeElapsed()
 end
 
 --- Returns the volume of the object set by SetVolume
----- @return number # # Volume from 0-1
+--- @return number # Volume from 0-1
 function WebAudio:GetVolume()
 	return self.volume
 end
 
 --- Returns the position of the WebAudio object.
----- @return GVector? # # Position of the stream or nil if not set.
+--- @return GVector? # Position of the stream or nil if not set.
 function WebAudio:GetPos()
 	return self.pos
 end
 
 --- Returns the radius of the stream set by SetRadius
----- @return number # # Radius
+--- @return number # Radius
 function WebAudio:GetRadius()
 	return self.radius
 end
 
 --- Returns the playtime length of a WebAudio object.
----- @return number # # Playtime Length
+--- @return number # Playtime Length
 function WebAudio:GetLength()
 	return self.length
 end
 
 --- Returns the file name of the WebAudio object. Not necessarily always the URL.
----- @return string # # File name
+--- @return string # File name
 function WebAudio:GetFileName()
 	return self.filename
 end
 
 --- Returns the state of the WebAudio object
----- @return number # # State, See STOPWATCH_* Enums
+--- @return number # State, See STOPWATCH_* Enums
 function WebAudio:GetState()
 	if self:IsDestroyed() then return STOPWATCH_STOPPED end
 	return self.stopwatch:GetState()
 end
 
 --- Returns whether the webaudio stream is looping (Set by SetLooping.)
----- @return boolean # # Looping
+--- @return boolean # Looping
 function WebAudio:GetLooping()
 	return self.looping
 end
 
+--- Returns whether the webaudio stream is 3D enabled (Set by Set3DEnabled.)
+--- @return boolean # 3D Enabled
+function WebAudio:Get3DEnabled()
+	return self.mode == WebAudio.MODE_3D
+end
+
 --- Returns whether the stream is parented or not. If it is parented, you won't be able to set it's position.
----- @return boolean # # Whether it's parented
+--- @return boolean # # Whether it's parented
 function WebAudio:IsParented()
 	return self.parented
 end
