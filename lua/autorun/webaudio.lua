@@ -16,8 +16,9 @@ local Modify = {
 	parented = 64,
 	radius = 128,
 	looping = 256,
+	mode = 512,
 
-	destroyed = 512
+	destroyed = 1024
 }
 
 local function hasModifyFlag(first, ...)
@@ -44,7 +45,7 @@ local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED,
 -- SHARED
 local WAEnabled = CreateConVar("wa_enable", "1", FCVAR_ARCHIVE + FCVAR_USERINFO, "Whether webaudio should be enabled to play on your client/server or not.", 0, 1)
 local WAMaxVolume = CreateConVar("wa_volume_max", "300", FCVAR_ARCHIVE, "Highest volume a webaudio sound can be played at, in percentage. 200 is 200%. SHARED Convar", 0, 100000)
-local WAMaxRadius = CreateConVar("wa_radius_max", "10000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0, 1000000)
+local WAMaxRadius = CreateConVar("wa_radius_max", "3000", FCVAR_ARCHIVE, "Farthest distance a WebAudio stream can be heard from. Will clamp to this value. SHARED Convar", 0, 1000000)
 local WAFFTEnabled = CreateConVar("wa_fft_enable", "1", FCVAR_ARCHIVE, "Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight.", 0, 1)
 
 -- CLIENT
@@ -86,6 +87,7 @@ end
 ---@class WebAudio
 ---@field stopwatch Stopwatch # SERVER
 ---@field radius number # SHARED
+---@field radius_sqr number # SHARED
 ---@field looping boolean # SHARED
 ---@field parent GEntity # SHARED
 ---@field parented boolean # SHARED
@@ -99,8 +101,16 @@ end
 ---@field pos GVector # SERVER. Position of stream
 ---@field id integer # Custom ID for webaudio stream allocated between 0-MAX
 ---@field ignored GCRecipientFilter # Players to ignore when sending net messages.
+---@field mode WebAudioMode
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
+
+---@alias WebAudioMode 0|1
+
+---@type WebAudioMode
+WebAudio.MODE_2D = 0
+---@type WebAudioMode
+WebAudio.MODE_3D = 1
 
 local WebAudioCounter = 0
 local WebAudios = {} -- TODO: See why weak kv doesn't work clientside for this
@@ -266,7 +276,7 @@ end
 
 -- Bit lengths
 local ID_LEN = 10
-local MODIFY_LEN = 10
+local MODIFY_LEN = 11
 local FFTSAMP_LEN = 8
 
 WebAudio.ID_LEN = ID_LEN
@@ -309,6 +319,7 @@ function WebAudioStatic.writeModify(modify)
 	net.WriteUInt(modify, MODIFY_LEN)
 end
 
+---@return WebAudio
 function WebAudioStatic.getFromID(id)
 	return WebAudios[id]
 end
@@ -372,6 +383,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 
 	self.url = url
 	self.owner = owner
+	self.mode = WebAudio.MODE_3D
 
 	-- Mutable --
 	self.playing = false
@@ -385,7 +397,9 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.playback_rate = 1
 	self.volume = 1
 	self.time = 0
+
 	self.radius = math.min(200, WAMaxRadius:GetInt()) -- Default IGmodAudioChannel radius
+	self.radius_sqr = self.radius * self.radius
 
 	self.pos = nil
 	self.direction = Vector(0, 0, 0)

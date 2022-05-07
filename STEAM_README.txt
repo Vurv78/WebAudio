@@ -76,7 +76,7 @@ This is a list of [b]ConVars[/b] that you can change to configure the addon to y
 [tr]
 	[td]SHARED[/td]
 	[td]wa_radius_max[/td]
-	[td]10000[/td]
+	[td]3000[/td]
 	[td]Allows you to set the maximum distance a stream can be heard from. Works on your client.[/td]
 [/tr]
 [tr]

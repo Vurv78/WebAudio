@@ -70,8 +70,21 @@ timer.Create("wa_think", 100 / 1000, 0, function()
 
 			-- Manually handle volume as you go farther from the stream.
 			if stream.pos then
-				local dist_to_stream = player_pos:Distance( stream.pos )
-				bass:SetVolume( stream.volume * ( 1 - math_min(dist_to_stream / stream.radius, 1) ) )
+				local dist_to_stream = player_pos:DistToSqr( stream.pos )
+
+				-- Could also ( 1 - math_min(dist_to_stream / stream.radius, 1) )
+				if dist_to_stream > stream.radius_sqr then
+					-- Stream is too far away.
+					bass:SetVolume( 0 )
+				elseif stream.mode == WebAudio.MODE_2D then
+					bass:SetVolume( stream.volume )
+				elseif dist_to_stream > stream.radius_sqr * 0.5 then
+					-- Stream is kinda far, now start smoothing
+					bass:SetVolume( stream.volume - ( dist_to_stream / stream.radius_sqr ) * stream.volume * 1.5 + stream.volume / 2 )
+				else
+					-- Stream is pretty close. Slow smooth
+					bass:SetVolume( stream.volume - ( dist_to_stream / stream.radius_sqr ) * stream.volume / 2 )
+				end
 			end
 		end
 	end
@@ -91,6 +104,7 @@ net.Receive("wa_create", function(len)
 	elseif verbosity >= 1 then
 		-- Warnings only (new default)
 		warn = wa_warn
+		function notify(...) end
 	else
 		function warn(...) end
 		function notify(...) end
@@ -208,7 +222,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 	if hasModifyFlag(modify_enum, Modify.destroyed) then
 		-- Don't destroy until we have the bass object.
 		if handle_bass then
-			self:Destroy()
+			self:Destroy(false)
 			self = nil
 		end
 		return
@@ -234,7 +248,7 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 	if hasModifyFlag(modify_enum, Modify.pos) then
 		if inside_net then self.pos = net.ReadVector() end
 		if handle_bass then
-			bass:SetPos(self.pos)
+			bass:SetPos(self.pos, nil)
 		end
 	end
 
@@ -256,7 +270,11 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 
 	-- Radius changed
 	if hasModifyFlag(modify_enum, Modify.radius) then
-		if inside_net then self.radius = math_min(net.ReadUInt(16), MaxRadius:GetInt()) end
+		if inside_net then
+			self.radius = math_min(net.ReadUInt(16), MaxRadius:GetInt())
+			self.radius_sqr = self.radius * self.radius
+		end
+
 		if handle_bass and self.pos then
 			local dist_to_stream = LocalPlayer():GetPos():Distance( self.pos )
 			bass:SetVolume( self.volume * ( 1 - math_min(dist_to_stream / self.radius, 1) ) )
@@ -267,6 +285,13 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		if inside_net then self.looping = net.ReadBool() end
 		if handle_bass then
 			bass:EnableLooping(self.looping)
+		end
+	end
+
+	if hasModifyFlag(modify_enum, Modify.mode) then
+		if inside_net then self.mode = net.ReadBit() end
+		if handle_bass then
+			bass:Set3DEnabled(self.mode == WebAudio.MODE_3D)
 		end
 	end
 
@@ -354,7 +379,7 @@ concommand.Add("wa_purge", function()
 		net.WriteUInt(stream_count, 8)
 		stopStreams(true)
 	net.SendToServer()
-end, nil, "Purges all of the currently playing WebAudio streams")
+end, nil, "Purges all of the currently playing WebAudio streams", 0)
 
 cvars.RemoveChangeCallback("wa_enable", "wa_enable")
 

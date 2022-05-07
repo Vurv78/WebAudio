@@ -35,7 +35,7 @@ See CONTRIBUTING.md
 | SERVER | wa_admin_only | 0             | Restrict E2 WebAudio access to admins. 0 is everyone, 1 is >=admin, 2 is super admins only.                                |
 | SERVER | wa_stream_max | 5             | Max number of E2 WebAudio streams a player can have                                                                        |
 | SHARED | wa_volume_max | 300           | Max volume of streams, will clamp the volume of streams to this on both the client and on the server                       |
-| SHARED | wa_radius_max | 10000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
+| SHARED | wa_radius_max | 3000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
 | SHARED | wa_fft_enable | 1             | Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight       |
 | CLIENT | wa_verbosity  | 1             | Verbosity of console notifications. 2 => URL/Logging + Extra Info, 1 => Only warnings/errors, 0 => Nothing (Avoid this)    |
 
@@ -104,6 +104,10 @@ Sets the radius in which to the stream will be heard in. Default is 200 and (def
 
 ``void webaudio:setLooping(number looping)``  
 Sets the stream to loop if n ~= 0, else stops looping.
+
+``void webaudio:set3DEnabled(number enabled)``
+By default WebAudio streams are 3D, so if enabled is 0 it will be set to "2D",
+so the sound will be on the player's position if they are within the radius of the stream.
 
 ## Special
 

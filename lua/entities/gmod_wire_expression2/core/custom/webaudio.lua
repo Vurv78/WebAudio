@@ -265,6 +265,8 @@ end
 __e2setcost(5)
 e2function void webaudio:setPos(vector pos)
 	checkPermissions(self)
+
+	this.did_set_pos = true
 	this:SetPos(pos)
 end
 
@@ -272,6 +274,12 @@ __e2setcost(15)
 e2function number webaudio:play()
 	checkPermissions(self)
 	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end
+
+	if this.did_set_pos == nil then
+		-- They didn't set position. Probably want to default to chip position & parent.
+		-- this:SetPos( self.entity:GetPos() )
+		this:SetParent( self.entity )
+	end
 
 	return this:Play() and 1 or 0
 end
@@ -312,6 +320,11 @@ end
 e2function void webaudio:setLooping(number loop)
 	checkPermissions(self)
 	this:SetLooping( loop ~= 0 )
+end
+
+e2function void webaudio:set3DEnabled(number enabled)
+	checkPermissions(self)
+	this:Set3DEnabled( enabled ~= 0 )
 end
 
 __e2setcost(15)
