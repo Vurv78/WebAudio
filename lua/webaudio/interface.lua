@@ -221,8 +221,9 @@ end
 local hasModifyFlag = Common.hasModifyFlag
 
 --- Transmits all stored data on the server about the WebAudio object to the clients
+---@param force_ignored boolean # Whether to also transmit to those who are ignored by it
 --- @return boolean # If successfully transmitted.
-function WebAudio:Transmit()
+function WebAudio:Transmit(force_ignored)
 	if self:IsDestroyed() then return end
 
 	net.Start("wa_change", true)
@@ -275,7 +276,7 @@ function WebAudio:Transmit()
 				net.WriteBool(self.playing)
 			end
 		end
-	self:Broadcast()
+	self:Broadcast(force_ignored)
 	self.modified = 0 -- Reset any modifications
 	return true
 end
@@ -305,9 +306,14 @@ end
 --- Runs net.SendOmit for you, just broadcasts the webaudio to all players with the object enabled.
 -- Does ❌ broadcast to people who have destroyed the object on their client
 -- Does ❌ broadcast to people with wa_enable set to 0
-function WebAudio:Broadcast()
+---@param force_ignored boolean # Whether to also transmit to those who are ignored by it
+function WebAudio:Broadcast(force_ignored)
 	-- Todo: Manually build this table because table.Add here is pretty bad for perf
-	net.SendOmit( table.Add(self.ignored:GetPlayers(), StreamDisabledPlayers.__net) )
+	if force_ignored then
+		net.SendOmit( StreamDisabledPlayers.__net )
+	else
+		net.SendOmit( table.Add(self.ignored:GetPlayers(), StreamDisabledPlayers.__net) )
+	end
 end
 
 --- Stop sending net messages to players who want to ignore certain streams.

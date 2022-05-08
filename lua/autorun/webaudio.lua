@@ -184,7 +184,7 @@ function WebAudio:Destroy(transmit)
 			-- 3. autorefresh this file
 			-- AddModify won't exist.
 			self:AddModify(Modify.destroyed)
-			self:Transmit()
+			self:Transmit(true)
 		end
 	end
 
