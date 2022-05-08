@@ -219,10 +219,12 @@ function WebAudio:GetFFT(update, cooldown)
 end
 
 local hasModifyFlag = Common.hasModifyFlag
+
 --- Transmits all stored data on the server about the WebAudio object to the clients
 --- @return boolean # If successfully transmitted.
 function WebAudio:Transmit()
 	if self:IsDestroyed() then return end
+
 	net.Start("wa_change", true)
 		-- Always present values
 		WebAudio.writeID(self.id)
@@ -291,6 +293,15 @@ function WebAudio:Subscribe(ply)
 	self.ignored:RemovePlayer(ply)
 end
 
+--- Returns if the player is subscribed to webaudio net messages.
+--- ## Warning
+--- Quite inefficient as it has to loop over a table under the scenes thanks to CRecipientFilter not having a function to check players.
+--- @param ply GPlayer The player to check
+--- @return boolean # Whether the player is subscribed
+function WebAudio:IsSubscribed(ply)
+	return not table.HasValue( self.ignored:GetPlayers(), ply )
+end
+
 --- Runs net.SendOmit for you, just broadcasts the webaudio to all players with the object enabled.
 -- Does ❌ broadcast to people who have destroyed the object on their client
 -- Does ❌ broadcast to people with wa_enable set to 0
@@ -303,6 +314,7 @@ end
 net.Receive("wa_ignore", function(len, ply)
 	if WebAudio.isSubscribed(ply) == false then return end -- They already have wa_enable set to 0
 	local n_ignores = net.ReadUInt(8)
+
 	for k = 1, n_ignores do
 		local stream = WebAudio.readStream()
 		if stream then

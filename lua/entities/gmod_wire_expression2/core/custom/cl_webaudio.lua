@@ -58,3 +58,7 @@ desc("getFFT(xwa:)", "Returns the fast fourier transform of the webaudio stream.
 -- Aliases
 desc("unparent(xwa:)", "Alias of xwa:setParent(), Unparents the stream")
 desc("parentTo(xwa:e)", "Alias of xwa:setParent(), Parents the stream to entity e")
+
+desc("setIgnored(xwa:en)", "If n is not 0, blocks the given user from hearing the stream. Else, unblocks the user.")
+desc("setIgnored(xwa:rn)", "If n is not 0, sets the stream to ignore certain players. Else, unblocks them.")
+desc("getIgnored(xwa:e)", "Returns if the user is blocked from hearing the stream. Note this also counts if they purged the webaudio stream themself, but doesn't count if they have webaudio disabled. Set by setIgnored")

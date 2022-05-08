@@ -160,3 +160,15 @@ Returns if the webaudio is in 3D mode. This is true by default.
 
 ``array webaudio:getFFT()``  
 Returns an array of 64 FFT values from 0-255.
+
+## Ignore System
+> This is a system similar to how you'd use holoVisible to hide holograms from others.
+
+``array webaudio:setIgnored(entity ply, number ignored)``  
+If ignored is not 0, blocks the given user from hearing the stream. Else, unblocks the user.
+
+``array webaudio:setIgnored(array plys, number ignored)``  
+If ignored is not 0, sets the stream to ignore certain players. Else, unblocks them all.
+
+``number webaudio:getIgnored(entity ply)``  
+Returns if the user is blocked from hearing the stream. Note this also counts if they purged the webaudio stream themself, but doesn't count if they have webaudio disabled. Set by setIgnored

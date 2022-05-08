@@ -327,6 +327,80 @@ e2function void webaudio:set3DEnabled(number enabled)
 	this:Set3DEnabled( enabled ~= 0 )
 end
 
+--[[
+	NOTE: This ignore system is fine right now but if there's ever a way for the client to re-subscribe themselves it'll be a problem.
+
+	For example WebAudio:Unsubscribe is called on wa_purge / wa_enable being set to 0.
+	But what if wa_enable being set to 1 called Subscribe again in the future?
+]]
+
+__e2setcost(25)
+e2function void webaudio:setIgnored(entity ply, number ignored)
+	checkPermissions(self)
+
+	if not IsValid(ply) then
+		E2Lib.raiseException("Invalid player to ignore", nil, self.trace)
+	end
+
+	if not ply:IsPlayer() then
+		E2Lib.raiseException("Expected Player, got Entity", nil, self.trace)
+	end
+
+	this.unsubbed_by_e2 = this.unsubbed_by_e2 or WireLib.RegisterPlayerTable()
+
+	if ignored == 0 then
+		-- Re-subscribe a user to the stream. (Only if they were unsubscribed by E2 previously.)
+		if not this:IsSubscribed(ply) and this.unsubbed_by_e2[ply] then
+			this:Subscribe(ply)
+			this.unsubbed_by_e2[ply] = nil
+		end
+	else
+		-- Ignore stream. Everyone can toggle this.
+		if this:IsSubscribed(ply) then
+			this.unsubbed_by_e2[ply] = true
+			this:Unsubscribe(ply)
+		end
+	end
+end
+
+__e2setcost(5)
+e2function void webaudio:setIgnored(array plys, number ignored)
+	checkPermissions(self)
+
+	this.unsubbed_by_e2 = this.unsubbed_by_e2 or WireLib.RegisterPlayerTable()
+
+	for _, ply in ipairs(plys) do
+		self.prf = self.prf + 5
+		if IsValid(ply) and ply:IsPlayer() then
+			if ignored == 0 then
+				-- Re-subscribe a user to the stream. (Only if they were unsubscribed by E2 previously.)
+				if not this:IsSubscribed(ply) and this.unsubbed_by_e2[ply] then
+					this:Subscribe(ply)
+					this.unsubbed_by_e2[ply] = nil
+				end
+			else
+				-- Ignore stream. Everyone can toggle this.
+				if this:IsSubscribed(ply) then
+					this.unsubbed_by_e2[ply] = true
+					this:Unsubscribe(ply)
+				end
+			end
+		end
+	end
+end
+
+e2function number webaudio:getIgnored(entity ply)
+	if not IsValid(ply) then
+		return E2Lib.raiseException("Invalid player to check if ignored", nil, self.trace)
+	end
+
+	if not ply:IsPlayer() then
+		return E2Lib.raiseException("Expected Player, got Entity", nil, self.trace)
+	end
+
+	return this:IsSubscribed(ply) and 0 or 1
+end
+
 __e2setcost(15)
 e2function void webaudio:destroy()
 	-- No limit here because they'd already have been limited by the creation burst.
