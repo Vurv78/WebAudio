@@ -337,9 +337,9 @@ end
 local next = next
 
 --- Returns an iterator for the global table of all webaudio streams. Use this in a for in loop
----- @return function # # Iterator, should be the same as ipairs / next
----- @return table # # Global webaudio table. Same as WebAudio.getList()
----- @return number # # Origin index, will always be nil (0 would be ipairs)
+--- @return fun(): number, WebAudio # Iterator, should be the same as ipairs / next
+--- @return table # Global webaudio table. Same as WebAudio.getList()
+--- @return number # Origin index, will always be nil (0 would be ipairs)
 function WebAudioStatic.getIterator()
 	return next, WebAudios, nil
 end
@@ -368,9 +368,30 @@ end
 
 --- Used internally. Should be called both server and client as it doesn't send any net messages to destroy the ids to the client.
 -- Called on WebAudio reload to stop all streams
-function WebAudioStatic.disassemble()
-	for k, stream in WebAudio.getIterator() do
-		stream:Destroy(not SERVER)
+if CLIENT then
+	function WebAudioStatic.disassemble()
+		for _, stream in WebAudio.getIterator() do
+			stream:Destroy(false)
+		end
+	end
+else
+	function WebAudioStatic.disassemble()
+		-- Todo: This is a dumb hack. There should be a hook mechanism so that the E2 core doesn't need special treatment in webaudio.
+		local E2StreamCounter = WebAudio.E2StreamCounter
+
+		if E2StreamCounter then
+			for _, stream in WebAudio.getIterator() do
+				if stream.owner and E2StreamCounter[stream.owner] then
+					E2StreamCounter[stream.owner] = math.max( E2StreamCounter[stream.owner] - 1, 0 )
+				end
+
+				stream:Destroy(false)
+			end
+		else
+			for _, stream in WebAudio.getIterator() do
+				stream:Destroy(false)
+			end
+		end
 	end
 end
 
@@ -655,6 +676,32 @@ end, nil, "List all currently playing WebAudio streams", 0)
 concommand.Add("wa_help", function()
 	MsgC( White, "You can get help & report issues on the Github: ", Color_Notify, "https://github.com/Vurv78/WebAudio", White, "\n" )
 end, nil, "Get help & report issues on the Github", 0)
+
+if CLIENT then
+	local Color_Aqua = Color(60, 240, 220, 255)
+
+	local function DrawOwners()
+		for id, stream in WebAudio.getIterator() do
+			local owner = stream.owner
+			if owner and owner:IsValid() and stream.pos then
+				local pos = stream.pos:ToScreen()
+				local txt = string.format("[%u] %s (%s)", id, owner:GetName(), owner:SteamID64() or "multirun")
+				draw.DrawText( txt, "DermaDefault", pos.x, pos.y, Color_Aqua, TEXT_ALIGN_CENTER)
+			end
+		end
+	end
+
+	local Display = false
+	concommand.Add("wa_display", function()
+		Display = not Display
+
+		if Display then
+			hook.Add("HUDPaint", "wa_draw_owners", DrawOwners)
+		else
+			hook.Remove("HUDPaint", "wa_draw_owners")
+		end
+	end, nil, "Draw owners of the currently playing WebAudio streams", 0)
+end
 
 WebAudioStatic.isWhitelistedURL = isWhitelistedURL
 

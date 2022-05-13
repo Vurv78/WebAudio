@@ -425,3 +425,21 @@ end
 function WebAudioStatic.isSubscribed(ply)
 	return not StreamDisabledPlayers.__hash[ply]
 end
+
+concommand.Add("wa_purge", function()
+	local E2StreamCounter = WebAudio.E2StreamCounter
+
+	if E2StreamCounter then
+		for _, stream in WebAudio.getIterator() do
+			if stream.owner and E2StreamCounter[stream.owner] then
+				E2StreamCounter[stream.owner] = math.max( E2StreamCounter[stream.owner] - 1, 0 )
+			end
+
+			stream:Destroy(true)
+		end
+	else
+		for _, stream in WebAudio.getIterator() do
+			stream:Destroy(true)
+		end
+	end
+end, nil, "Purges all of the currently playing WebAudio streams", 0)

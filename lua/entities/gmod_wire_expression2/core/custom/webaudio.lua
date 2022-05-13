@@ -11,6 +11,7 @@ local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Com
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
 local StreamCounter = WireLib.RegisterPlayerTable()
+WebAudio.E2StreamCounter = StreamCounter
 
 local CREATE_REGEN = 0.3 -- 300ms to regenerate a stream
 local NET_REGEN = 0.1 -- 100ms to regenerate net messages
