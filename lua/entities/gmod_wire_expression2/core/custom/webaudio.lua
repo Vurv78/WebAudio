@@ -276,9 +276,9 @@ e2function number webaudio:play()
 	checkPermissions(self)
 	if not NetBurst:use(self.player) then return self:throw("You are transmitting too fast, check webAudioCanTransmit!", 0) end
 
-	if this.did_set_pos == nil then
-		-- They didn't set position. Probably want to default to chip position & parent.
-		-- this:SetPos( self.entity:GetPos() )
+	if this.did_set_pos == nil and not IsValid(this.parent) then
+		-- They didn't set position nor parent it.
+		-- Probably want to default to parenting on chip.
 		this:SetParent( self.entity )
 	end
 
