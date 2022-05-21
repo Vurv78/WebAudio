@@ -5,25 +5,32 @@ local function desc(name, description)
 	tbl[name] = description
 end
 
+--#region Base
 desc("webAudio(s)", "Returns a WebAudio object of that URL as long as it is whitelisted by the server. Has a 500 ms cooldown between calls. If you can't create a webAudio object, will error, so check webAudioCanCreate before calling this!")
 desc("webAudiosLeft()", "Returns the number of WebAudio objects you can create in total for your player")
 desc("webAudioCanCreate()", "Returns whether you can create a WebAudio object. Checks cooldown and whether you have another slot for a webaudio stream left.")
 desc("webAudioCanCreate(s)", "Same as webAudioCanCreate() but also checks if a URL is whitelisted on the server to use.")
+--#endregion
 
---- Misc
+--#region Misc
 desc("nowebaudio()", "Returns an invalid webaudio object")
+desc("toString(xwa)", "Returns the something like ``WebAudio [<ID>]`` with <ID> being the ID of the stream")
+desc("toString(xwa:)", "Returns the something like ``WebAudio [<ID>]`` with <ID> being the ID of the stream")
+--#endregion
 
---- Permissions
+--#region Permissions
 desc("webAudioEnabled()", "Returns whether WebAudio playing is enabled on the server for E2")
 desc("webAudioAdminOnly()", "Returns whether WebAudio playing is restricted to admins or super admins. 0 for everyone, 1 for admins, 2 for superadmins")
+--#endregion
 
---- WebAudio Methods
+--#region Special Methods
 desc("update(xwa:)", "Sends all of the information of the object given by functions like setPos and setTime to the client. You need to call this after running functions without running ``:play()`` or ``:pause()`` on them since those sync with the client. Returns 1 if could update, 0 if hit transmission quota")
 desc("destroy(xwa:)", "Destroys the WebAudio object, rendering it useless. It will silently fail when trying to use it from here on! This gives you another slot to make a WebAudio object. Check if an object is destroyed with isValid!")
 desc("pause(xwa:)", "Pauses the stream where it is currently playing, Returns 1 or 0 if could successfully do so, because of quota. Automatically calls updates self internally.")
 desc("play(xwa:)", "Starts the stream or continues where it left off after pausing, Returns 1 or 0 if could successfully do so from quota. Automatically updates self internally.")
+--#endregion
 
--- Modify Object
+--#region Modify Object
 desc("setDirection(wxa:v)", "Sets the direction in which the WebAudio stream is playing towards without updating it. Remember to call ``self:update()`` when you are done modifying the object!")
 desc("setPos(xwa:v)", "Sets the 3D Position of the WebAudio stream without updating it. Remember to call ``self:update()`` when you are done modifying the object!")
 desc("setVolume(xwa:n)", "Sets the volume of the WebAudio stream, in percent format. 200 is 2x as loud as normal, 100 is default. Will error if it is past ``wa_volume_max``")
@@ -34,31 +41,39 @@ desc("setParent(xwa:)", "Unparents the stream")
 desc("setRadius(xwa:n)", "Sets the radius in which to the stream will be heard in. Default is 200 and (default) max is 1500.")
 desc("setLooping(xwa:n)", "If n is not 0, sets the stream to loop. Else stops looping.")
 desc("set3DEnabled(xwa:n)", "If n is not 0, sets the stream to be 3D. By default streams are 3D. Else, sets the audio to play directly on clients (mono audio).")
+--#endregion
 
--- is* Getters
+--#region is* Getters
 desc("isValid(xwa:)", "Returns 1 or 0 for whether the webaudio object is valid (If it is not destroyed & Not invalid from quota)")
 desc("isParented(xwa:)", "Returns 1 or 0 for whether the webaudio object is parented or not. Note that if the stream is parented, you cannot set it's position!")
+--#endregion
 
---- Getters
+--#region Getters
 desc("getPos(xwa:)", "Returns the current position of the WebAudio object. This does not work with parenting.")
 desc("getVolume(xwa:)", "Returns the volume of the WebAudio object set by setVolume")
 desc("getRadius(xwa:)", "Returns the radius of the WebAudio object set by setRadius")
 desc("getLooping(xwa:)", "Returns if the stream is looping, set by setLooping")
 desc("get3DEnabled(xwa:)", "Returns if the stream's 3D is enabled, set by set3DEnabled")
+--#endregion
 
--- Replicated Clientside behavior on server
+--#region Replicated Clientside behavior on server
 desc("getTime(xwa:)", "Returns the playback time of the stream in seconds.")
 desc("getState(xwa:)", "Returns the state of the stream. 0 is Stopped, 1 is Playing, 2 is Paused. See the CHANNEL_* constants")
+--#endregion
 
--- Info received from client
+--#region Info received from client
 desc("getLength(xwa:)", "Returns the playback duration of the stream in seconds. Will return -1 if couldn't get length.")
 desc("getFileName(xwa:)", "Returns the file name of the WebAudio stream. Will usually be the URL you give, but not always. Will return \"\" if we haven't received the name yet.")
 desc("getFFT(xwa:)", "Returns the fast fourier transform of the webaudio stream. It is an array of 64 numbers or less, ranging from 0 to 255")
+--#endregion
 
--- Aliases
+--#region Aliases
 desc("unparent(xwa:)", "Alias of xwa:setParent(), Unparents the stream")
 desc("parentTo(xwa:e)", "Alias of xwa:setParent(), Parents the stream to entity e")
+--#endregion
 
+--#region Ignore System
 desc("setIgnored(xwa:en)", "If n is not 0, blocks the given user from hearing the stream. Else, unblocks the user.")
 desc("setIgnored(xwa:rn)", "If n is not 0, sets the stream to ignore certain players. Else, unblocks them.")
 desc("getIgnored(xwa:e)", "Returns if the user is blocked from hearing the stream. Note this also counts if they purged the webaudio stream themself, but doesn't count if they have webaudio disabled. Set by setIgnored")
+--#endregion

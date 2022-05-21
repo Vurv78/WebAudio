@@ -30,6 +30,8 @@ function WebAudio:AddModify(n)
 	self.modified = bit.bor(self.modified, n)
 end
 
+--#region Setters
+
 --- Sets the volume of the stream
 -- Does not transmit
 --- @param vol number Float Volume (1 is 100%, 2 is 200% ..)
@@ -78,41 +80,6 @@ function WebAudio:SetDirection(dir)
 	if isvector(dir) and self.direction ~= dir then
 		self.direction = dir
 		self:AddModify(Modify.direction)
-		return true
-	end
-end
-
---- Resumes or starts the stream.
---- @return boolean? # Successfully played, will return nil if the stream is destroyed or if already playing
-function WebAudio:Play()
-	if self:IsDestroyed() then return end
-
-	if self.playing == false then
-		self:AddModify(Modify.playing)
-
-		if self.stopwatch.state == STOPWATCH_STOPPED then
-			self.stopwatch:Start()
-		else
-			self.stopwatch:Play()
-		end
-
-		self.playing = true
-		self:Transmit()
-		return true
-	end
-end
-
---- Pauses the stream and automatically transmits.
---- @return boolean? # Successfully paused, will return nil if the stream is destroyed or if already paused
-function WebAudio:Pause()
-	if self:IsDestroyed() then return end
-
-	if self.playing then
-		self:AddModify(Modify.playing)
-		self.stopwatch:Pause()
-		self.playing = false
-		self:Transmit()
-
 		return true
 	end
 end
@@ -191,6 +158,49 @@ function WebAudio:Set3DEnabled(is3d)
 	end
 end
 
+--#endregion
+
+--#region Special
+
+--- Resumes or starts the stream.
+--- @return boolean? # Successfully played, will return nil if the stream is destroyed or if already playing
+function WebAudio:Play()
+	if self:IsDestroyed() then return end
+
+	if self.playing == false then
+		self:AddModify(Modify.playing)
+
+		if self.stopwatch.state == STOPWATCH_STOPPED then
+			self.stopwatch:Start()
+		else
+			self.stopwatch:Play()
+		end
+
+		self.playing = true
+		self:Transmit(false)
+		return true
+	end
+end
+
+--- Pauses the stream and automatically transmits.
+--- @return boolean? # Successfully paused, will return nil if the stream is destroyed or if already paused
+function WebAudio:Pause()
+	if self:IsDestroyed() then return end
+
+	if self.playing then
+		self:AddModify(Modify.playing)
+		self.stopwatch:Pause()
+		self.playing = false
+		self:Transmit(false)
+
+		return true
+	end
+end
+
+--#endregion
+
+--#region Getters
+
 local LastUpdates = setmetatable({}, {
 	__mode = "k"
 })
@@ -218,6 +228,8 @@ function WebAudio:GetFFT(update, cooldown)
 	return self.fft
 end
 
+--#endregion
+
 local hasModifyFlag = Common.hasModifyFlag
 
 --- Transmits all stored data on the server about the WebAudio object to the clients
@@ -226,7 +238,7 @@ local hasModifyFlag = Common.hasModifyFlag
 function WebAudio:Transmit(force_ignored)
 	if self:IsDestroyed() then return end
 
-	net.Start("wa_change", true)
+	net.Start("wa_change", not force_ignored)
 		-- Always present values
 		WebAudio.writeID(self.id)
 		local modified = self.modified
@@ -281,6 +293,8 @@ function WebAudio:Transmit(force_ignored)
 	return true
 end
 
+--#region Subscriptions
+
 --- Registers an object to not send any net messages to from WebAudio transmissions.
 -- This is called by clientside destruction.
 --- @param ply GPlayer The player to stop sending net messages to
@@ -329,6 +343,10 @@ net.Receive("wa_ignore", function(len, ply)
 	end
 end)
 
+--#endregion
+
+--#region Net Messages
+
 --- This receives net messages when the SERVER wants information about a webaudio stream you created.
 -- It gets stuff like average bitrate and length of the song this way.
 -- You'll only be affecting your own streams and chip, so there's no point in "abusing" this.
@@ -369,7 +387,7 @@ end)
 
 
 -- FFT will be an array of UInts (check FFTSAMP_LEN). It may not be fully filled to 64 samples, some may be nil to conserve bandwidth. Keep this in mind.
--- We don't have to care for E2 since e2 automatically gives you 0 instead of nil or an error.
+-- We don't have to care for E2 since e2 automatically gives you 0 instead of nil for an error.
 net.Receive("wa_fft", function(len, ply)
 	local stream = WebAudio.readStream()
 
@@ -382,6 +400,8 @@ net.Receive("wa_fft", function(len, ply)
 		end
 	end
 end)
+
+--#endregion
 
 hook.Add("PlayerDisconnected", "wa_player_cleanup", function(ply)
 	if ply:IsBot() then return end
@@ -396,6 +416,8 @@ hook.Add("PlayerInitialSpawn", "wa_player_init", function(ply, transition)
 		WebAudio.unsubscribe(ply)
 	end
 end)
+
+--#region Static Functions
 
 ---@class WebAudio
 local WebAudioStatic = WebAudio.getStatics()
@@ -426,7 +448,10 @@ function WebAudioStatic.isSubscribed(ply)
 	return not StreamDisabledPlayers.__hash[ply]
 end
 
+--#endregion
+
 concommand.Add("wa_purge", function()
+	---@type table<GEntity, number>?
 	local E2StreamCounter = WebAudio.E2StreamCounter
 
 	if E2StreamCounter then

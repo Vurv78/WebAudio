@@ -7,19 +7,43 @@
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
-	volume = 1,
-	time = 2,
-	pos = 4,
-	playing = 8,
-	playback_rate = 16,
-	direction = 32,
-	parented = 64,
-	radius = 128,
-	looping = 256,
-	mode = 512,
+	volume        = 0b000000000001,
+	time          = 0b000000000010,
+	pos           = 0b000000000100,
+	playing       = 0b000000001000,
+	playback_rate = 0b000000010000,
+	direction     = 0b000000100000,
+	parented      = 0b000001000000,
+	radius        = 0b000010000000,
+	looping       = 0b000100000000,
+	mode          = 0b001000000000,
+	reserved      = 0b010000000000, -- pan maybe?
 
-	destroyed = 1024
+	destroyed     = 0b100000000000,
+
+	all           = 0b111111111111
 }
+
+-- Bits needed to send a bitflag of all the modifications
+local MODIFY_LEN = math.ceil( math.log(Modify.all, 2) )
+
+-- Max 1024 current streams
+local ID_LEN = math.ceil( math.log(1024, 2) )
+
+local FFTSAMP_LEN = 8
+
+local function toBinary(n, bits)
+	bits = bits or 32
+
+	local t = {}
+	for i = bits, 1, -1 do
+		-- Basically go by each bit and use bit32.extract. Inlined the function here with width as 1.
+		-- https://github.com/AlberTajuelo/bitop-lua/blob/8146f0b323f55f72eacbb2a8310922d50ae75ddf/src/bitop/funcs.lua#L92
+		t[bits - i] = bit.band(bit.rshift(n, i), 1)
+	end
+
+	return "0b" .. table.concat(t)
+end
 
 local function hasModifyFlag(first, ...)
 	return bit.band(first, ...) ~= 0
@@ -85,6 +109,7 @@ end
 
 --- Initiate WebAudio struct for both realms
 ---@class WebAudio
+---@field url string # SHARED
 ---@field stopwatch Stopwatch # SERVER
 ---@field radius number # SHARED
 ---@field radius_sqr number # SHARED
@@ -104,6 +129,10 @@ end
 ---@field mode WebAudioMode
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
+
+WebAudio.MODIFY_LEN = MODIFY_LEN
+WebAudio.ID_LEN = ID_LEN
+WebAudio.FFTSAMP_LEN = FFTSAMP_LEN
 
 ---@alias WebAudioMode 0|1
 
@@ -169,7 +198,7 @@ function WebAudio:IsDestroyed()
 end
 
 --- Destroys a webaudio object and makes it the same (value wise) as WebAudio.getNULL()
---- @param transmit boolean If SERVER, should we transmit the destruction to the client? Default true
+--- @param transmit boolean? If SERVER, should we transmit the destruction to the client? Default true
 function WebAudio:Destroy(transmit)
 	if self:IsDestroyed() then return end
 	if transmit == nil then transmit = true end
@@ -279,15 +308,6 @@ local WebAudioStatic = {}
 function WebAudioStatic.getNULL()
 	return setmetatable({ destroyed = true }, WebAudio)
 end
-
--- Bit lengths
-local ID_LEN = 10
-local MODIFY_LEN = 11
-local FFTSAMP_LEN = 8
-
-WebAudio.ID_LEN = ID_LEN
-WebAudio.MODIFY_LEN = MODIFY_LEN
-WebAudio.FFTSAMP_LEN = FFTSAMP_LEN
 
 --- Same as net.ReadUInt but doesn't need the bit length in order to adapt our code more easily.
 ---- @return number # # UInt10
@@ -437,7 +457,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	self.needs_info = SERVER -- Whether this stream still needs information from the client.
 	self.length = -1
 	self.filename = ""
-	self.fft = {} -- SERVER will receive this every think by default.
+	self.fft = {}
 
 	if CLIENT then
 		self.bass = bassobj
@@ -456,7 +476,7 @@ local function createWebAudio(_, url, owner, bassobj, id)
 			WebAudio.writeID(self.id)
 			net.WriteString(self.url)
 			net.WriteEntity(self.owner)
-		self:Broadcast() -- Defined in wa_interface
+		self:Broadcast(false) -- Defined in wa_interface
 	end
 
 	WebAudios[self.id] = self
@@ -660,8 +680,9 @@ concommand.Add("wa_list", function()
 	local stream_list, n = {}, 0
 	for id, stream in WebAudio.getIterator() do
 		local owner = stream.owner
-		if IsValid(owner) then
+		if IsValid(owner) and owner:IsPlayer() then
 			n = n + 1
+			---@diagnostic disable-next-line (Emmylua definitions don't cover the Player class well.)
 			stream_list[n] = string.format("[%d] %s(%s): '%s'", stream.id, owner:GetName(), owner:SteamID64() or "multirun", stream.url)
 		end
 	end
@@ -685,6 +706,7 @@ if CLIENT then
 			local owner = stream.owner
 			if owner and owner:IsValid() and stream.pos then
 				local pos = stream.pos:ToScreen()
+				---@diagnostic disable-next-line (Emmylua definitions don't cover the Player class well.)
 				local txt = string.format("[%u] %s (%s)", id, owner:GetName(), owner:SteamID64() or "multirun")
 				draw.DrawText( txt, "DermaDefault", pos.x, pos.y, Color_Aqua, TEXT_ALIGN_CENTER)
 			end
@@ -715,6 +737,7 @@ WebAudio.Common = {
 
 	Modify = Modify,
 	hasModifyFlag = hasModifyFlag,
+	toBinary = toBinary,
 	getFlags = getFlags,
 
 	--- Convars

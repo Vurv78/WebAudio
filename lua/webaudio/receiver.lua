@@ -315,11 +315,12 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 		end
 
 		if handle_bass and self.parented then
+			---@type GEntity (Absolutely sure it is parented)
 			local parent = self.parent
 			if IsValid(parent) then
 				local parent_pos = self.parent_pos
 				local position = parent_pos and parent:LocalToWorld(parent_pos) or parent:GetPos()
-				bass:SetPos( position )
+				bass:SetPos(position, nil)
 				self.pos = position
 			end
 		end
@@ -344,7 +345,7 @@ net.Receive("wa_change", function(len)
 	local id, modify_enum = WebAudio.readID(), WebAudio.readModify()
 	local obj = WebAudio.getFromID(id)
 
-	if AwaitingChanges[id] then return end
+	if AwaitingChanges[id] == modify_enum then return end
 	if not obj then return end -- Object was destroyed on the client for whatever reason. Most likely reason is wa_purge
 
 	if obj.bass then
