@@ -13,21 +13,21 @@ end
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
-	volume        = b'000000000001',
-	time          = b'000000000010',
-	pos           = b'000000000100',
-	playing       = b'000000001000',
-	playback_rate = b'000000010000',
-	direction     = b'000000100000',
-	parented      = b'000001000000',
-	radius        = b'000010000000',
-	looping       = b'000100000000',
-	mode          = b'001000000000',
-	reserved      = b'010000000000', -- pan maybe?
+	volume        = b"000000000001",
+	time          = b"000000000010",
+	pos           = b"000000000100",
+	playing       = b"000000001000",
+	playback_rate = b"000000010000",
+	direction     = b"000000100000",
+	parented      = b"000001000000",
+	radius        = b"000010000000",
+	looping       = b"000100000000",
+	mode          = b"001000000000",
+	reserved      = b"010000000000", -- pan maybe?
 
-	destroyed     = b'100000000000',
+	destroyed     = b"100000000000",
 
-	all           = b'111111111111'
+	all           = b"111111111111"
 }
 
 -- Bits needed to send a bitflag of all the modifications
