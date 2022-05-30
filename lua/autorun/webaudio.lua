@@ -3,25 +3,31 @@
 	(part 1)
 ]]
 
+--- x86 branch is on an outdated luajit that doesn't support binary literals. Woo
+-- i love the game "garry's mod" created by Garry Newman as a mod for Valve's Source game engine and released in December 2004, before being expanded into a standalone release that was published by Valve in November 2006.
+local function b(s)
+	return tonumber(s, 2)
+end
+
 -- Modification Flags
 -- If you ever change a setting of the Interface object, will add one of these flags to it.
 -- This will be sent to the client to know what to read in the net message to save networking
 local Modify = {
-	volume        = 0b000000000001,
-	time          = 0b000000000010,
-	pos           = 0b000000000100,
-	playing       = 0b000000001000,
-	playback_rate = 0b000000010000,
-	direction     = 0b000000100000,
-	parented      = 0b000001000000,
-	radius        = 0b000010000000,
-	looping       = 0b000100000000,
-	mode          = 0b001000000000,
-	reserved      = 0b010000000000, -- pan maybe?
+	volume        = b'000000000001',
+	time          = b'000000000010',
+	pos           = b'000000000100',
+	playing       = b'000000001000',
+	playback_rate = b'000000010000',
+	direction     = b'000000100000',
+	parented      = b'000001000000',
+	radius        = b'000010000000',
+	looping       = b'000100000000',
+	mode          = b'001000000000',
+	reserved      = b'010000000000', -- pan maybe?
 
-	destroyed     = 0b100000000000,
+	destroyed     = b'100000000000',
 
-	all           = 0b111111111111
+	all           = b'111111111111'
 }
 
 -- Bits needed to send a bitflag of all the modifications
