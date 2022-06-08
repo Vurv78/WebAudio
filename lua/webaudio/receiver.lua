@@ -202,7 +202,7 @@ net.Receive("wa_create", function(len)
 		end
 	end)
 
-	WebAudio(url, owner, nil, id) -- Register object
+	WebAudio.new(url, owner, nil, id) -- Register object
 end)
 
 local Modify = Common.Modify

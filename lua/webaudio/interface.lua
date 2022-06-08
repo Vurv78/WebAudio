@@ -451,20 +451,7 @@ end
 --#endregion
 
 concommand.Add("wa_purge", function()
-	---@type table<GEntity, number>?
-	local E2StreamCounter = WebAudio.E2StreamCounter
-
-	if E2StreamCounter then
-		for _, stream in WebAudio.getIterator() do
-			if stream.owner and E2StreamCounter[stream.owner] then
-				E2StreamCounter[stream.owner] = math.max( E2StreamCounter[stream.owner] - 1, 0 )
-			end
-
-			stream:Destroy(true)
-		end
-	else
-		for _, stream in WebAudio.getIterator() do
-			stream:Destroy(true)
-		end
+	for _, stream in WebAudio.getIterator() do
+		stream:Destroy(true)
 	end
 end, nil, "Purges all of the currently playing WebAudio streams", 0)

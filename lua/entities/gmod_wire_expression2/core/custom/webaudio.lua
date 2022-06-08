@@ -20,7 +20,6 @@ local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Com
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
 local StreamCounter = WireLib.RegisterPlayerTable()
-WebAudio.E2StreamCounter = StreamCounter
 
 local CREATE_REGEN = 0.3 -- 300ms to regenerate a stream
 local NET_REGEN = 0.1 -- 100ms to regenerate net messages
@@ -57,8 +56,16 @@ registerType("webaudio", "xwa", WebAudio.getNULL(),
 )
 
 local function registerStream(self, url, owner)
-	local stream = WebAudio(url, owner)
-	table.insert(self.data.webaudio_streams, stream)
+	local stream = WebAudio.new(url, owner)
+
+	local idx = table.insert(self.data.webaudio_streams, stream)
+	StreamCounter[owner] = (StreamCounter[owner] or 0) + 1
+
+	stream:OnDestroy(function(_)
+		self.data.webaudio_streams[idx] = nil
+		StreamCounter[owner] = StreamCounter[owner] - 1
+	end)
+
 	return stream
 end
 
@@ -149,17 +156,24 @@ end
 
 --- Generic Burst limit until wiremod gets its own like Starfall.
 -- Also acts as a limit on the number of something.
-local Burst = setmetatable({}, {
-	__call = function(self, max, regen_time)
-		return setmetatable({
-			max = max, -- Will start full.
-
-			regen = regen_time,
-			tracker = WireLib.RegisterPlayerTable()
-		}, self)
-	end
-})
+---@class Burst
+---@field max number
+---@field regen number
+---@field tracker table<GPlayer, { stock: number, last: number }>
+local Burst = {}
 Burst.__index = Burst
+
+---@param max number
+---@param regen_time number
+---@return Burst
+function Burst.new(max, regen_time)
+	return setmetatable({
+		max = max, -- Will start full.
+
+		regen = regen_time,
+		tracker = WireLib.RegisterPlayerTable()
+	}, Burst)
+end
 
 function Burst:get(ply)
 	local data = self.tracker[ply]
@@ -188,6 +202,7 @@ function Burst:check(ply)
 	end
 end
 
+---@param ply GPlayer
 function Burst:use(ply)
 	local data = self.tracker[ply]
 	if data then
@@ -212,8 +227,8 @@ function Burst:use(ply)
 	end
 end
 
-local CreationBurst = Burst( MaxStreams:GetInt(), CREATE_REGEN ) -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
-local NetBurst = Burst( 10, NET_REGEN ) -- In order to prevent too many updates at once.
+local CreationBurst = Burst.new( MaxStreams:GetInt(), CREATE_REGEN ) -- Prevent too many creations at once. (To avoid Creation->Destruction net spam.)
+local NetBurst = Burst.new( 10, NET_REGEN ) -- In order to prevent too many updates at once.
 
 cvars.RemoveChangeCallback("wa_stream_max", "wa_stream_max")
 
@@ -221,12 +236,9 @@ cvars.AddChangeCallback("wa_stream_max", function(_cvar_name, _old, new)
 	CreationBurst.max = new
 end, "wa_stream_max")
 
-local function checkCounter(ply, use)
+local function checkCounter(ply)
 	local count = StreamCounter[ply] or 0
 	if count < MaxStreams:GetInt() then
-		if use then
-			StreamCounter[ply] = count + 1
-		end
 		return true
 	end
 	return false
@@ -257,7 +269,7 @@ registerFunction("webAudio", "s", "xwa", function(self, args)
 	end
 
 	-- Stream Count Quota
-	if not checkCounter(ply, true) then
+	if not checkCounter(ply) then
 		E2Lib.raiseException("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!", nil, self.trace)
 	end
 
@@ -367,15 +379,8 @@ registerFunction("destroy", "xwa:", "n", function(self, args)
 	local op1 = args[2]
 	---@type WebAudio
 	local this = op1[1](self, op1)
-
 	-- No limit here because they'd already have been limited by the creation burst.
-	local owner = this.owner or self.player
-	-- Prevent people destroying others streams and getting more slots? Would be weird.
-	if this:Destroy() then
-		StreamCounter[owner] = StreamCounter[owner] - 1
-		return 1
-	end
-	return 0
+	return this:Destroy() and 1 or 0
 end)
 
 -- void webaudio:update()
@@ -849,21 +854,15 @@ registerCallback("construct", function(self)
 end)
 
 registerCallback("destruct", function(self)
-	---@type GPlayer
-	local owner = self.player
 	---@type table<number, WebAudio>
 	local streams = self.data.webaudio_streams
 
-	local count = StreamCounter[owner] or 0
-
 	for k, stream in pairs(streams) do
 		if stream:IsValid() then
-			count = count - 1 -- Assume StreamCounter[owner] is not nil since we're looping through self.webaudio_streams. If it is nil, something really fucked up.
 			stream:Destroy(true)
 		end
 		streams[k] = nil
 	end
-	StreamCounter[owner] = count
 end)
 
 --#endregion cleanup

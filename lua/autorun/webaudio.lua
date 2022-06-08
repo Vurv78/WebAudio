@@ -3,8 +3,7 @@
 	(part 1)
 ]]
 
---- x86 branch is on an outdated luajit that doesn't support binary literals. Woo
--- i love the game "garry's mod" created by Garry Newman as a mod for Valve's Source game engine and released in December 2004, before being expanded into a standalone release that was published by Valve in November 2006.
+--- x86 branch is on LuaJIT 2.0.4 which doesn't support binary literals
 local function b(s)
 	return tonumber(s, 2)
 end
@@ -133,6 +132,7 @@ end
 ---@field id integer # Custom ID for webaudio stream allocated between 0-MAX
 ---@field ignored GCRecipientFilter # Players to ignore when sending net messages.
 ---@field mode WebAudioMode
+---@field hook_destroy table<fun(self: WebAudio), boolean> # SHARED. Hooks to run before/when the stream is destroyed.
 _G.WebAudio = {}
 WebAudio.__index = WebAudio
 
@@ -203,11 +203,21 @@ function WebAudio:IsDestroyed()
 	return self.destroyed
 end
 
+--- Calls the given function right before webaudio destruction.
+---@param fun fun(self: WebAudio)
+function WebAudio:OnDestroy(fun)
+	self.hook_destroy[fun] = true
+end
+
 --- Destroys a webaudio object and makes it the same (value wise) as WebAudio.getNULL()
 --- @param transmit boolean? If SERVER, should we transmit the destruction to the client? Default true
 function WebAudio:Destroy(transmit)
 	if self:IsDestroyed() then return end
 	if transmit == nil then transmit = true end
+
+	for callback in pairs(self.hook_destroy) do
+		callback(self)
+	end
 
 	if CLIENT and self.bass then
 		self.bass:Stop()
@@ -394,30 +404,9 @@ end
 
 --- Used internally. Should be called both server and client as it doesn't send any net messages to destroy the ids to the client.
 -- Called on WebAudio reload to stop all streams
-if CLIENT then
-	function WebAudioStatic.disassemble()
-		for _, stream in WebAudio.getIterator() do
-			stream:Destroy(false)
-		end
-	end
-else
-	function WebAudioStatic.disassemble()
-		-- Todo: This is a dumb hack. There should be a hook mechanism so that the E2 core doesn't need special treatment in webaudio.
-		local E2StreamCounter = WebAudio.E2StreamCounter
-
-		if E2StreamCounter then
-			for _, stream in WebAudio.getIterator() do
-				if stream.owner and E2StreamCounter[stream.owner] then
-					E2StreamCounter[stream.owner] = math.max( E2StreamCounter[stream.owner] - 1, 0 )
-				end
-
-				stream:Destroy(false)
-			end
-		else
-			for _, stream in WebAudio.getIterator() do
-				stream:Destroy(false)
-			end
-		end
+function WebAudioStatic.disassemble()
+	for _, stream in WebAudio.getIterator() do
+		stream:Destroy(false)
 	end
 end
 
@@ -426,51 +415,50 @@ local function createWebAudio(_, url, owner, bassobj, id)
 	-- assert( owner and isentity(owner) and owner:IsPlayer(), "'owner' argument must be a valid player." )
 	-- Commenting this out in case someone wants a webaudio object to be owned by the world or something.
 
-	local self = setmetatable({}, WebAudio)
+	local self = setmetatable({
+		-- allocID will return nil if there's no slots left.
+		id = assert( id or allocID(), "Reached maximum amount of concurrent WebAudio streams!" ),
+		url = url,
+		owner = owner,
+		mode = WebAudio.MODE_3D,
 
-	self.id = id or allocID()
-	-- allocID will return nil if there's no slots left.
-	if id == nil and not self.id then
-		error("Reached maximum amount of concurrent WebAudio streams!")
-	end
+		--#region mutable
+		playing = false,
+		destroyed = false,
 
-	self.url = url
-	self.owner = owner
-	self.mode = WebAudio.MODE_3D
+		parented = false,
+		parent = nil, -- Entity
 
-	-- Mutable --
-	self.playing = false
-	self.destroyed = false
+		modified = 0,
+		playback_rate = 1,
+		volume = 1,
+		time = 0,
 
-	self.parented = false
-	self.parent = nil -- Entity
+		radius = math.min(200, WAMaxRadius:GetInt()), -- Default IGmodAudioChannel radius
+		radius_sqr = math.min(200, WAMaxRadius:GetInt()) ^ 2,
 
-	self.modified = 0
+		pos = nil,
+		direction = Vector(0, 0, 0),
+		looping = false,
+		--#endregion mutable
 
-	self.playback_rate = 1
-	self.volume = 1
-	self.time = 0
+		--#region net vars
+		needs_info = SERVER, -- Whether this stream still needs information from the client.
+		length = -1,
+		filename = "",
+		fft = {},
 
-	self.radius = math.min(200, WAMaxRadius:GetInt()) -- Default IGmodAudioChannel radius
-	self.radius_sqr = self.radius * self.radius
+		hook_destroy = {}
+		--#endregion net vars
+	}, WebAudio)
 
-	self.pos = nil
-	self.direction = Vector(0, 0, 0)
-	self.looping = false
-	-- Mutable --
-
-	-- Net vars
-	self.needs_info = SERVER -- Whether this stream still needs information from the client.
-	self.length = -1
-	self.filename = ""
-	self.fft = {}
 
 	if CLIENT then
 		self.bass = bassobj
 		self.parent_pos = Vector(0, 0, 0) -- Parent pos being nil means we will go directly to the parent's position w/o calculating local pos.
 	else
 		-- Stream will be set to 100 second length until the length of the audio stream is determined by the client.
-		self.stopwatch = StopWatch(100, function(watch)
+		self.stopwatch = StopWatch.new(100, function(watch)
 			if not watch:GetLooping() then
 				self:Pause()
 			end
@@ -494,6 +482,16 @@ setmetatable(WebAudio, {
 	__index = WebAudioStatic,
 	__call = createWebAudio
 })
+
+--- Creates a new webaudio object. Prefer this over the __call version
+---@param url string
+---@param owner GPlayer?
+---@param bassobj GIGModAudioChannel?
+---@param id number?
+---@return WebAudio
+function WebAudio.new(url, owner, bassobj, id)
+	return createWebAudio(WebAudio, url, owner, bassobj, id)
+end
 
 --[[
 	Whitelist handling
@@ -569,7 +567,10 @@ local Whitelist = {
 	simple [[myinstants.com]],
 
 	-- TTS like moonbase alpha's
-	simple [[tts.cyzon.us]]
+	simple [[tts.cyzon.us]],
+
+	-- US Air Traffic Control radio host
+	simple [[liveatc.net]]
 }
 
 local OriginalWhitelist = table.Copy(Whitelist)

@@ -30,3 +30,4 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | Mattjeanes ytdl | ❔ | youtubedl.mattjeanes.com | Ytdl host by mattjeanes https://github.com/MattJeanes/YouTubeDL | 🚧 |
 | MyInstants | ✔️ | myinstants.com | Sound effects | https://myinstants.com/media/sounds/taco-bell-bong-sfx.mp3 |
 | Moonbase Alpha TTS | ✔️ | tts.cyzon.us | TTS almost identical to moonbase alpha's | https://tts.cyzon.us/tts?text=bruh |
+| LiveATC | ➖ | liveatc.net | US Air Traffic Control radio host | https://www.liveatc.net/hlisten.php?mount=lszh1_app_east&icao=lszh |

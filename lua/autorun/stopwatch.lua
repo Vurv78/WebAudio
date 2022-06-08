@@ -1,5 +1,3 @@
-
-
 --[[
 	StopWatch/TimerEx Library
 	Author: Vurv
@@ -31,7 +29,10 @@ local timer_now = RealTime
 ---@param duration number # How long the stopwatch will last
 ---@param callback fun(self: Stopwatch) # What to run when the stopwatch finishes.
 ---@return Stopwatch
-local function Initialize(_, duration, callback)
+function Stopwatch.new(duration, callback)
+	assert(duration, "bad argument #1 to 'Stopwatch.new' (number expected)")
+	assert(callback, "bad argument #2 to 'Stopwatch.new' (function expected)")
+
 	local self = setmetatable({}, Stopwatch)
 	self.playback_rate = 1
 	self.playback_now = timer_now()
@@ -64,8 +65,11 @@ local function Initialize(_, duration, callback)
 	return self
 end
 
+-- Backwards compatibility with __call version
 setmetatable(Stopwatch, {
-	__call = Initialize
+	__call = function(self, ...)
+		return self.new(...)
+	end
 })
 
 --- Pauses a stopwatch at the current time to be resumed with :Play
@@ -196,5 +200,6 @@ function Stopwatch:GetLooping()
 end
 
 _G.StopWatch = Stopwatch
+_G.Stopwatch = Stopwatch
 
 return Stopwatch
