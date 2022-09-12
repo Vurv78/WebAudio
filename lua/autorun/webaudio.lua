@@ -576,7 +576,11 @@ local Whitelist = {
 	simple [[trekcore.com/audio]],
 
 	-- Broadcastify
-	pattern [[broadcastify%.cdnstream1%.com/%d+]]
+	pattern [[broadcastify%.cdnstream1%.com/%d+]],
+
+	-- Google Drive
+	simple [[docs.google.com/uc]],
+	simple [[drive.google.com/uc]]
 }
 
 local OriginalWhitelist = table.Copy(Whitelist)
