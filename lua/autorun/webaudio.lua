@@ -570,7 +570,13 @@ local Whitelist = {
 	simple [[tts.cyzon.us]],
 
 	-- US Air Traffic Control radio host
-	simple [[liveatc.net]]
+	simple [[liveatc.net]],
+
+	-- Star Trek Sounds
+	simple [[trekcore.com/audio]],
+
+	-- Broadcastify
+	pattern [[broadcastify%.cdnstream1%.com/%d+]]
 }
 
 local OriginalWhitelist = table.Copy(Whitelist)

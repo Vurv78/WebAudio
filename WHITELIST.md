@@ -31,3 +31,5 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | MyInstants | ✔️ | myinstants.com | Sound effects | https://myinstants.com/media/sounds/taco-bell-bong-sfx.mp3 |
 | Moonbase Alpha TTS | ✔️ | tts.cyzon.us | TTS almost identical to moonbase alpha's | https://tts.cyzon.us/tts?text=bruh |
 | LiveATC | ➖ | liveatc.net | US Air Traffic Control radio host | https://www.liveatc.net/hlisten.php?mount=lszh1_app_east&icao=lszh |
+| TrekCore | ➖ | trekcore.com | Star Trek Sounds | https://trekcore.com/audio/aliensounds/alien_door01.mp3 |
+| Broadcastify | ➖ | broadcastify.cdnstream1.com | Radio broadcasts | https://broadcastify.cdnstream1.com/18962 |
