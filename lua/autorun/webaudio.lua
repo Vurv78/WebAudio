@@ -523,6 +523,12 @@ local registers = { ["pattern"] = pattern, ["simple"] = simple }
 local Whitelist = {
 	-- Soundcloud
 	pattern [[[%w-_]+%.sndcdn%.com/.+]],
+	
+	-- Bandcamp
+	pattern [[[%w-_]+%.bcbits%.com/.+]]
+	
+	-- Google Video (used by Youtube)
+	pattern [[[%w-_]+%.googlevideo%.com/.+]]
 
 	-- Google Translate Api, Needs an api key.
 	simple [[translate.google.com]],
