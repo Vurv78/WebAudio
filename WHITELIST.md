@@ -33,5 +33,7 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | LiveATC | ➖ | liveatc.net | US Air Traffic Control radio host | https://www.liveatc.net/hlisten.php?mount=lszh1_app_east&icao=lszh |
 | TrekCore | ➖ | trekcore.com | Star Trek Sounds | https://trekcore.com/audio/aliensounds/alien_door01.mp3 |
 | Broadcastify | ➖ | broadcastify.cdnstream1.com | Radio broadcasts | https://broadcastify.cdnstream1.com/18962 |
-| Google Drive | ➖ | drive.google.com/uc | File hosting from google | N/A |
-| Google Drive | ➖ | docs.google.com/uc | File hosting from google | N/A |
+| Google Drive | ➖ | drive.google.com/uc | File hosting from google | 🚧 |
+| Google Drive | ➖ | docs.google.com/uc | File hosting from google | 🚧 |
+| Bandcamp | ➖ | bcbits.com | Bandcamp hosting | 🚧 |
+| Google Video | ➖ | googlevideo.com | Video hosting used by YouTube | 🚧 |
