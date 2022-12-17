@@ -1,8 +1,5 @@
 name: Linter
 
-# Just runs GluaFixer https://github.com/FPtje/GLuaFixer on the repo.
-# Derived from ACF-3's workflow
-
 on:
   push:
     paths:
@@ -14,15 +11,5 @@ on:
 
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-
-    - name: Download GluaFixer 1.18.2
-      run: |
-        curl -o glualint.zip -L https://github.com/FPtje/GLuaFixer/releases/download/1.18.2/glualint-1.18.2-linux.zip
-        unzip glualint.zip
-
-    - name: Lint Code
-      run: ./glualint lua
+  lint:
+    uses: FPtje/GLuaFixer/.github/workflows/glualint.yml@master
