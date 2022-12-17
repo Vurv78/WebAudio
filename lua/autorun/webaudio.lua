@@ -522,7 +522,7 @@ local registers = { ["pattern"] = pattern, ["simple"] = simple }
 
 local Whitelist = {
 	-- Soundcloud
-	pattern [[%w+%.sndcdn%.com/.+]],
+	pattern [[[%w-_]+%.sndcdn%.com/.+]],
 
 	-- Google Translate Api, Needs an api key.
 	simple [[translate.google.com]],
