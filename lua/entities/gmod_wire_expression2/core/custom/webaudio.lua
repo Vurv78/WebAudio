@@ -16,7 +16,7 @@ end
 local Common = WebAudio.Common
 
 -- Convars
-local Enabled, AdminOnly, FFTEnabled = Common.WAEnabled, Common.WAAdminOnly, Common.WAFFTEnabled
+local Enabled, AdminOnly, FFTEnabled, SCCompat = Common.WAEnabled, Common.WAAdminOnly, Common.WAFFTEnabled, Common.WASCCompat
 local MaxStreams, MaxVolume, MaxRadius = Common.WAMaxStreamsPerUser, Common.WAMaxVolume, Common.WAMaxRadius
 
 local StreamCounter = WireLib.RegisterPlayerTable()
@@ -237,11 +237,7 @@ cvars.AddChangeCallback("wa_stream_max", function(_cvar_name, _old, new)
 end, "wa_stream_max")
 
 local function checkCounter(ply)
-	local count = StreamCounter[ply] or 0
-	if count < MaxStreams:GetInt() then
-		return true
-	end
-	return false
+	return (StreamCounter[ply] or 0) < MaxStreams:GetInt()
 end
 
 --#endregion util
@@ -285,7 +281,7 @@ registerFunction("webAudioCanCreate", "", "n", function(self, args)
 
 	return (
 		CreationBurst:check(ply)
-		and checkCounter(ply, false)
+		and checkCounter(ply)
 	) and 1 or 0
 end)
 
@@ -299,7 +295,7 @@ registerFunction("webAudioCanCreate", "s", "n", function(self, args)
 
 	return (
 		CreationBurst:check(ply)
-		and checkCounter(ply, false)
+		and checkCounter(ply)
 		and WebAudio.isWhitelistedURL(url)
 	) and 1 or 0
 end)
@@ -847,10 +843,172 @@ end)
 
 --#endregion getters
 
+--#region compat
+if SCCompat:GetBool() then
+	---@param index integer
+	---@param volume number?
+	---@param url string
+	---@param ent GEntity
+	local function start(self, index, ent, url, volume)
+		local existing = self.data.lazy_mfs[index]
+		if existing then
+			existing:Destroy(true)
+		end
+
+		local ply = self.player
+		checkPermissions(self)
+
+		if not WebAudio.isWhitelistedURL(url) then
+			if WebAudio.Common.CustomWhitelist then
+				E2Lib.raiseException("This URL is not whitelisted! The server has a custom whitelist.", nil, self.trace)
+			else
+				E2Lib.raiseException("This URL is not whitelisted! See github.com/Vurv78/WebAudio/blob/main/WHITELIST.md", nil, self.trace)
+			end
+		end
+
+		-- Creation Time Quota
+		if not CreationBurst:use(ply) then
+			E2Lib.raiseException("You are creating WebAudios too fast. Check webAudioCanCreate before calling!", nil, self.trace)
+		end
+
+		-- Stream Count Quota
+		if not checkCounter(ply) then
+			E2Lib.raiseException("Reached maximum amount of WebAudio streams! Check webAudioCanCreate or webAudiosLeft before calling!", nil, self.trace)
+		end
+
+		local wa = registerStream(self, url, ply)
+		wa:SetParent(ent)
+		self.data.lazy_mfs[index] = wa
+
+		timer.Simple(0, function()
+			wa:Play()
+		end)
+
+		return 1
+	end
+
+	__e2setcost(500)
+
+	registerFunction("streamHelp", "", "n", function(self, args)
+		self.player:PrintMessage(HUD_PRINTTALK, "Streamcore -> WebAudio: https://github.com/Vurv78/WebAudio/wiki/From-StreamCore-To-WebAudio")
+	end)
+
+	registerFunction("streamCanStart", "", "n", function(self, args)
+		local ply = self.player
+
+		return (
+			CreationBurst:check(ply)
+			and checkCounter(ply)
+		) and 1 or 0
+	end)
+
+	--! For you mfs who are too lazy to use the [Adaption Library](https://github.com/Vurv78/WebAudio/wiki/From-StreamCore-To-WebAudio#adaption-library)
+	registerFunction("streamStart", "e:ns", "n", function(self, args)
+		local op1, op2, op3 = args[2], args[3], args[4]
+		local ent, idx, url = op1[1](self, op1), op2[1](self, op2), op3[1](self, op2)
+
+		return start(self, idx, ent, url)
+	end)
+
+	registerFunction("streamStart", "e:nsn", "n", function(self, args)
+		local op1, op2, op3, op4 = args[2], args[3], args[4], args[5]
+		local ent, idx, url, volume = op1[1](self, op1), op2[1](self, op2), op3[1](self, op2), op4[1](self, op4)
+		return start(self, idx, ent, url, volume)
+	end)
+
+	registerFunction("streamStart", "e:nns", "n", function(self, args)
+		local op1, op2, op3, op4 = args[2], args[3], args[4], args[5]
+		local ent, idx, volume, url = op1[1](self, op1), op2[1](self, op2), op3[1](self, op2), op4[1](self, op4)
+
+		return start(self, idx, ent, url, volume)
+	end)
+
+	registerFunction("streamStop", "n", "n", function(self, args)
+		local op1 = args[2]
+		local idx = op1[1](self, op1)
+
+		checkPermissions(self)
+
+		local wa = self.data.lazy_mfs[idx]
+		if wa then
+			wa:Destroy(true)
+			return 1
+		else
+			return self:throw("Invalid stream!", 0)
+		end
+	end)
+
+	registerFunction("streamVolume", "nn", "n", function(self, args)
+		local op1, op2 = args[2], args[3]
+		local idx, volume = op1[1](self, op1), op2[1](self, op2)
+
+		checkPermissions(self)
+
+		local wa = self.data.lazy_mfs[idx]
+		if wa then
+			return wa:SetVolume( math.min(volume, MaxVolume:GetInt() / 100) )
+				and wa:Transmit(false)
+				and 1 or 0
+		else
+			return self:throw("Invalid stream!", 0)
+		end
+	end)
+
+	registerFunction("streamRadius", "nn", "n", function(self, args)
+		local op1, op2 = args[2], args[3]
+		local idx, radius = op1[1](self, op1), op2[1](self, op2)
+
+		checkPermissions(self)
+
+		local wa = self.data.lazy_mfs[idx]
+		if wa then
+			return wa:SetRadius( math.min(radius, MaxRadius:GetInt()) )
+				and wa:Transmit(false)
+				and 1 or 0
+		else
+			return self:throw("Invalid stream!", 0)
+		end
+	end)
+
+	-- How many seconds to wait in between streamStart calls:
+	registerFunction("streamLimit", "", "n", function(self, args)
+		return CREATE_REGEN
+	end)
+
+	registerFunction("streamMaxRadius", "", "n", function(self, args)
+		return MaxRadius:GetInt()
+	end)
+
+	registerFunction("streamAdminOnly", "", "n", function(self, args)
+		return AdminOnly
+	end)
+
+	registerFunction("streamDisable3D", "n", "n", function(self, args)
+		local op1 = args[2]
+		local idx = op1[1](self, op1)
+
+		checkPermissions(self)
+
+		local wa = self.data.lazy_mfs[idx]
+		if wa then
+			return wa:Set3DEnabled(false)
+				and wa:Transmit(false)
+				and 1 or 0
+		else
+			return self:throw("Invalid stream!", 0)
+		end
+	end)
+end
+--#endregion
+
 --#region cleanup
 
 registerCallback("construct", function(self)
 	self.data.webaudio_streams = {}
+
+	if SCCompat:GetBool() then
+		self.data.lazy_mfs = {}
+	end
 end)
 
 registerCallback("destruct", function(self)

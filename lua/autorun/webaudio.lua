@@ -67,6 +67,7 @@ end
 
 -- SERVER
 local WAAdminOnly = CreateConVar("wa_admin_only", "0", FCVAR_REPLICATED, "Whether creation of WebAudio objects should be limited to admins. 0 for everyone, 1 for admins, 2 for superadmins. wa_enable_sv takes precedence over this", 0, 2)
+local WASCCompat = CreateConVar("wa_sc_compat", "0", FCVAR_REPLICATED, "Whether streamcore-compatible functions should be generated for E2.", 0, 1)
 
 -- Max in total is ~1023 from ID_LEN writing a 10 bit uint. Assuming ~30 players max using webaudio, can only give ~30.
 local WAMaxStreamsPerUser = CreateConVar("wa_stream_max", "5", FCVAR_REPLICATED, "Max number of streams a player can have at once.", 1, 30)
@@ -768,6 +769,7 @@ WebAudio.Common = {
 	-- Server
 	WAAdminOnly = WAAdminOnly,
 	WAMaxStreamsPerUser = WAMaxStreamsPerUser,
+	WASCCompat = WASCCompat,
 
 	-- Shared
 	WAEnabled = WAEnabled,
