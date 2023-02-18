@@ -91,6 +91,12 @@ This is a list of [b]ConVars[/b] that you can change to configure the addon to y
 	[td]1[/td]
 	[td]Verbosity of console notifications. 2 => URL/Logging + Extra Info, 1 => Only warnings/errors, 0 => Nothing (Avoid this)[/td]
 [/tr]
+[tr]
+	[td]SERVER[/td]
+	[td]wa_sc_compat[/td]
+	[td]0[/td]
+	[td]Whether streamcore-compatible functions should be generated for E2 (for backwards compat)[/td]
+[/tr]
 [/table]
 
 [h2]Console Commands[/h2]

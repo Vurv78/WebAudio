@@ -38,6 +38,7 @@ See CONTRIBUTING.md
 | SHARED | wa_radius_max | 3000         | Max distance where WebAudio streams can be heard from their origin.                                                        |
 | SHARED | wa_fft_enable | 1             | Whether FFT data is enabled for the server / your client. You shouldn't need to disable it as it is very lightweight       |
 | CLIENT | wa_verbosity  | 1             | Verbosity of console notifications. 2 => URL/Logging + Extra Info, 1 => Only warnings/errors, 0 => Nothing (Avoid this)    |
+| SERVER | wa_sc_compat | 0 | Whether streamcore-compatible functions should be generated for E2 (for backwards compat) |
 
 ## Concommands
 | Realm  | Name                | Description                                                                                                    |
