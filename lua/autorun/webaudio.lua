@@ -534,8 +534,8 @@ local Whitelist = {
 	-- Google Translate Api, Needs an api key.
 	simple [[translate.google.com]],
 
-	-- Discord
-	pattern [[cdn[%w-_]*%.discordapp%.com/.+]],
+	-- Discord ( Disabled because discord blocked steam http headers :\ )
+	-- pattern [[cdn[%w-_]*%.discordapp%.com/.+]],
 
 	-- Reddit
 	simple [[i.redditmedia.com]],

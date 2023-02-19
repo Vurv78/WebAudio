@@ -11,7 +11,7 @@ This is the default whitelist that webaudio will abide by unless a ``webaudio_wh
 | --- | --- | --- | --- | --- |
 | Soundcloud | ✔️ | sndcdn.com | Soundcloud api | 🚧 |
 | Google Translate | ✔️ | translate.google.com | Google translate api, can be used for tts | 🚧 |
-| Discord | ✔️ | cdn.discordapp.com | Discord file uploads, you can post an mp3 and get the link to use it. | https://cdn.discordapp.com/attachments/732861600708690010/866579835706015765/Sound_Chimera.mp3 | 🚧 |
+| Discord | ❌ | cdn.discordapp.com | Discord file uploads, you can post an mp3 and get the link to use it. Disabled because discord blocked steam http headers :\\. | https://cdn.discordapp.com/attachments/732861600708690010/866579835706015765/Sound_Chimera.mp3 | 🚧 |
 | Reddit | 🖼️ | i.redditmedia.com  | Reddit media uploads. Think this is for images so might be removed. | 🚧 |
 | Reddit | 🖼️ | i.redd.it  | Reddit uploads | 🚧 |
 | Reddit | 🖼️ | preview.redd.it | Reddit uploads. | 🚧 |
