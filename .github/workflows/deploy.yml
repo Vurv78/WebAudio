@@ -25,5 +25,5 @@ jobs:
       - name: Deploy
         run: |
           chmod +x gmodws
-          set STEAM_PASSWORD=${{ secrets.STEAM_PASSWORD }}
+          export STEAM_PASSWORD=${{ secrets.STEAM_PASSWORD }}
           ./gmodws ${{ secrets.STEAM_USERNAME }} 2466875474 webaudio.gma "Deployment via github actions"
