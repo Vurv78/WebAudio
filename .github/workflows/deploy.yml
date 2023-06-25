@@ -1,0 +1,28 @@
+name: Deploy to Workshop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@master
+      - uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "luajit-2.1.0-beta3"
+
+      - name: Run gma packer
+        run: |
+          lua .github/workflows/gma.lua webaudio.gma
+
+      - name: Download gmodws
+        run: |
+          curl -o gmodws.zip -L https://github.com/Meachamp/gmodws/releases/download/v1.5/gmodws.zip
+          unzip gmodws.zip
+
+      - name: Deploy
+        run: |
+          set STEAM_PASSWORD=${{ secrets.STEAM_PASSWORD }}
+          ./gmodws ${{ secrets.STEAM_USERNAME }} 2466875474 webaudio.gma "Deployment via github actions"
