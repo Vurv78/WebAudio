@@ -17,13 +17,13 @@ jobs:
         run: |
           lua .github/workflows/gma.lua webaudio.gma
 
-      - name: Download gmodws
-        run: |
-          curl -o gmodws.zip -L https://github.com/Meachamp/gmodws/releases/download/v1.5/gmodws.zip
-          unzip gmodws.zip
-
-      - name: Deploy
-        run: |
-          chmod +x gmodws
-          export STEAM_PASSWORD=${{ secrets.STEAM_PASSWORD }}
-          ./gmodws ${{ secrets.STEAM_USERNAME }} 2466875474 webaudio.gma "Deployment via github actions"
+      - name: Upload to workshop
+      - uses: arma-actions/workshop-upload@v1
+        with:
+          appId: '4000'
+          itemId: '2466875474'
+          contentPath: 'webaudio.gma'
+          changelog: 'Automatic deployment'
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
