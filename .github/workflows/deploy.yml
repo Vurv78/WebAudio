@@ -20,10 +20,10 @@ jobs:
       - name: Upload to workshop
         uses: arma-actions/workshop-upload@v1
         with:
-          appId: '4000'
-          itemId: '2466875474'
-          contentPath: 'webaudio.gma'
-          changelog: 'Automatic deployment'
+          appId: 4000
+          itemId: 2466875474
+          contentPath: "webaudio.gma"
+          changelog: "Deployment via Github to latest changes"
         env:
           STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
           STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
