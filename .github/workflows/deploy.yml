@@ -16,7 +16,7 @@ jobs:
           lua .github/workflows/gma.lua webaudio.gma
 
       - name: Upload to workshop
-        uses: wiremod/workshop-upload@v1
+        uses: wiremod/workshop-upload@a02cec0c6bd79bd2a514787485d806ed44c295f1
         with:
           appId: 4000
           itemId: 2466875474
