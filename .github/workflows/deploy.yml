@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: wiremod/workshop-upload@29cea3bb0bdec9b11aea407194dab00754e089f3
+      - uses: vurv78/gmod-upload@c6fbb4ea03470f60ec3e18d88794611715fbc872
         with:
           id: 2466875474
           changelog: "Deployment via Github to latest changes"
