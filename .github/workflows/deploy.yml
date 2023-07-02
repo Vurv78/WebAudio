@@ -9,18 +9,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: leafo/gh-actions-lua@v10
-
-      - name: Run gma packer
-        run: |
-          lua .github/workflows/gma.lua webaudio.gma
-
-      - name: Upload to workshop
-        uses: wiremod/workshop-upload@a02cec0c6bd79bd2a514787485d806ed44c295f1
+      - uses: wiremod/workshop-upload@541f63c56d221bfd787bde723954e14a8c8318ac
         with:
-          appId: 4000
-          itemId: 2466875474
-          contentPath: "webaudio.gma"
+          id: 2466875474
           changelog: "Deployment via Github to latest changes"
         env:
           STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
