@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: vurv78/gmod-upload@v0.1
+      - uses: vurv78/gmod-upload@v0.1.0
         with:
           id: 2466875474
           changelog: "Deployment via Github to latest changes"
