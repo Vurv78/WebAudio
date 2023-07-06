@@ -1,7 +1,9 @@
 name: Deploy to Workshop
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - "main"
 
 jobs:
   deploy:
@@ -9,10 +11,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: vurv78/gmod-upload@v0.1.1
+      - uses: vurv78/gmod-upload@v0.1.2
         with:
           id: 2466875474
-          changelog: "Deployment via Github to latest changes"
+          changelog: "${{ github.event.head_commit.message }}"
         env:
           STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
           STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
