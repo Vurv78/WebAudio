@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: vurv78/gmod-upload@v0.1.2
+      - uses: vurv78/gmod-upload@59b6207bb40fbe8fc01d5464c8e57e06ebee9c14
         with:
           id: 2466875474
           changelog: "${{ github.event.head_commit.message }}"
