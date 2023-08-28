@@ -90,6 +90,26 @@ timer.Create("wa_think", 100 / 1000, 0, function()
 	end
 end)
 
+---@param url string
+---@param onSuccess fun()
+---@param onError fun(err: string)
+local function checkStreamContents(url, onSuccess, onError)
+    if not WebAudio.Common.WACheckFileContent:GetBool() then
+        onSuccess()
+        return
+    end
+
+	http.Fetch(url, function(body, _, _)
+		if body:find("#EXTM3U", 1, true) then
+            onError("Cannot create stream with unwhitelisted file format (m3u)")
+		end
+
+        onSuccess()
+    end, function(err)
+        onError("HTTP error:" ..err)
+    end)
+end
+
 net.Receive("wa_create", function(len)
 	local id, url, owner = WebAudio.readID(), net.ReadString(), net.ReadEntity()
 	local verbosity = Verbosity:GetInt()
@@ -141,12 +161,7 @@ net.Receive("wa_create", function(len)
 
 	notify("User %s(%s) created WebAudio object with url [%q]", owner:Nick(), owner:SteamID64() or "multirun", url)
 
-	http.Fetch(url, function(body, size, headers)
-		if body:find("#EXTM3U", 1, true) then
-			streamFailed()
-			return warn("User %s(%s) tried to create WebAudio object with unwhitelisted file format (m3u)", owner:Nick(), owner:SteamID64() or "multirun")
-		end
-
+	checkStreamContents(url, function()
 		sound.PlayURL(url, "3d noblock noplay", function(bass, errid, errname)
 			if errid then
 				streamFailed()
@@ -209,7 +224,7 @@ net.Receive("wa_create", function(len)
 		end)
 	end, function(err)
 		streamFailed()
-		return warn("HTTP error when creating WebAudio receiver with id %d, Error [%q]", id, err)
+		return warn("Error when creating WebAudio object, User %s(%s), Error: %s", owner:Nick(), owner:SteamID64() or "multirun", err)
 	end)
 
 	WebAudio.new(url, owner, nil, id) -- Register object
