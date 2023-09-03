@@ -96,7 +96,7 @@ end)
 local function checkStreamContents(url, onSuccess, onError)
 	if hook.Run("WA_ShouldCheckStreamContent", url) == false then
 		return onSuccess()
-    end
+	end
 
 	http.Fetch(url, function(body, _, _)
 		if body:find("#EXTM3U", 1, true) then
@@ -109,7 +109,7 @@ local function checkStreamContents(url, onSuccess, onError)
 
 		onSuccess()
 	end, function(err)
-		onError("HTTP error:" ..err)
+		onError("HTTP error:" .. err)
 	end)
 end
 
