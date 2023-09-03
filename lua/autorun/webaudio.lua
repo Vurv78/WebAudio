@@ -681,6 +681,9 @@ local function isWhitelistedURL(url)
 	if not isstring(url) then return false end
 	url = url:Trim()
 
+	local isWhitelisted = hook.Run("WA_IsWhitelistedURL", url)
+	if isWhitelisted ~= nil then return isWhitelisted end
+
 	local relative = url:match("^https?://www%.(.*)") or url:match("^https?://(.*)")
 	if not relative then return false end
 
