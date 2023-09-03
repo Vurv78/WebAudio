@@ -227,7 +227,7 @@ net.Receive("wa_create", function(len)
 		end)
 	end, function(err)
 		streamFailed()
-		return warn("Error when creating WebAudio object, User %s(%s), Error: %s", owner:Nick(), owner:SteamID64() or "multirun", err)
+		return warn("Error when creating WebAudio object with id: %s, User %s(%s), Error: %s", id, owner:Nick(), owner:SteamID64() or "multirun", err)
 	end)
 
 	WebAudio.new(url, owner, nil, id) -- Register object
