@@ -94,7 +94,7 @@ end)
 ---@param onSuccess fun()
 ---@param onError fun(err: string)
 local function checkStreamContents(url, onSuccess, onError)
-    if hook.Run("WA_ShouldCheckFileContent", url) == false then
+    if hook.Run("WA_ShouldCheckStreamContent", url) == false then
         onSuccess()
         return
     end
@@ -102,6 +102,10 @@ local function checkStreamContents(url, onSuccess, onError)
 	http.Fetch(url, function(body, _, _)
 		if body:find("#EXTM3U", 1, true) then
             onError("Cannot create stream with unwhitelisted file format (m3u)")
+		end
+
+		if body:find("[playlist]", 1, true) then
+			onError("Cannot create stream with unwhitelisted file format (pls)")
 		end
 
         onSuccess()
