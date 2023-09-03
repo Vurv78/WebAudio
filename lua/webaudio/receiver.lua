@@ -94,7 +94,7 @@ end)
 ---@param onSuccess fun()
 ---@param onError fun(err: string)
 local function checkStreamContents(url, onSuccess, onError)
-    if not WebAudio.Common.WACheckFileContent:GetBool() then
+    if hook.Run("WA_ShouldCheckFileContent", url) == false then
         onSuccess()
         return
     end
