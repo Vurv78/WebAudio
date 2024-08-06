@@ -566,7 +566,8 @@ local Whitelist = {
 
 	-- Onedrive
 	simple [[onedrive.live.com/redir]],
-
+	simple [[api.onedrive.com]]
+	
 	-- ytdl host. Requires 2d mode which we currently don't support.
 	simple [[youtubedl.mattjeanes.com]],
 
