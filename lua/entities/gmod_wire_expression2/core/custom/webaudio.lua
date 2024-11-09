@@ -101,28 +101,7 @@ end)
 
 --#region operators
 
-__e2setcost(1)
-registerOperator("ass", "xwa", "xwa", function(self, args)
-	local op1, op2, scope = args[2], args[3], args[4]
-	local rv2 = op2[1](self, op2)
-	self.Scopes[scope][op1] = rv2
-	self.Scopes[scope].vclk[op1] = true
-	return rv2
-end)
-
-registerOperator("eq", "xwaxwa", "n", function(self, args) -- if(Wa == Wa)
-	local op1, op2 = args[2], args[3]
-	local v1, v2 = op1[1](self, op1), op2[1](self, op2)
-	if v1 == v2 then return 1 else return 0 end
-end)
-
-registerOperator("neq", "xwaxwa", "n", function(self, args) -- if(Wa != Wa)
-	local op1, op2 = args[2], args[3]
-	local v1, v2 = op1[1](self, op1), op2[1](self, op2)
-	if v1 ~= v2 then return 1 else return 0 end
-end)
-
-registerOperator("is", "xpng", "n", function(self, args) -- if(Wa)
+registerOperator("is", "xwa", "n", function(self, args) -- if(Wa)
 	local op1 = args[2]
 
 	--- @type WebAudio
