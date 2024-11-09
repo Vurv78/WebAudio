@@ -329,13 +329,16 @@ function updateObject(id, modify_enum, handle_bass, inside_net)
 			self.parented = net.ReadBool()
 			if self.parented then
 				local ent = net.ReadEntity()
-				self.parent = ent
-				if self.pos ~= nil then
-					-- We've initialized and received a changed position before
-					self.parent_pos = ent:WorldToLocal(self.pos)
-				else
-					-- self.pos hasn't been touched, play the sound at the entity's position.
-					self.parent_pos = nil
+
+				if IsValid(ent) then
+					self.parent = ent
+					if self.pos ~= nil then
+						-- We've initialized and received a changed position before
+						self.parent_pos = ent:WorldToLocal(self.pos)
+					else
+						-- self.pos hasn't been touched, play the sound at the entity's position.
+						self.parent_pos = nil
+					end
 				end
 			else
 				self.parent = nil
